@@ -1,8 +1,10 @@
--- This file has been generated from package.yaml by hpack version 0.21.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.7.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f7f43eaf08f4a2a78ad4d303404ea19c729aa53a0afa30fd0f99d8eb505b8306
+-- hash: 3027a1ad5b882123e9547c30e72a7f9fa49104af48efc12d5e7817927129e600
 
 name:           lambda-calculator
 version:        2.0.0
@@ -17,7 +19,6 @@ copyright:      2016 Sean Gillespie
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple
-cabal-version:  >= 1.10
 
 source-repository head
   type: git
