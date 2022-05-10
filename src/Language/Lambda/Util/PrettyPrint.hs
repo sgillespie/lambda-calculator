@@ -15,9 +15,11 @@ newtype PDoc s = PDoc [s]
 instance PrettyPrint s => PrettyPrint (PDoc s) where
   prettyPrint (PDoc ls) = concatMap prettyPrint ls
 
+instance Semigroup (PDoc s) where
+  (PDoc p1) <> (PDoc p2) = PDoc $ p1 ++ p2
+
 instance Monoid (PDoc s) where
   mempty = empty
-  (PDoc p1) `mappend` (PDoc p2) = PDoc $ p1 ++ p2
 
 instance Functor PDoc where
   fmap f (PDoc ls) = PDoc (fmap f ls)

@@ -36,12 +36,58 @@ executables:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
+      - -Wall
+      - -Wcompat
+      - -Widentities
+      - -Wincomplete-record-updates
+      - -Wincomplete-uni-patterns
+      - -Wpartial-fields
+      - -Wredundant-constraints
     dependencies:
+      - bytestring
       - containers
       - lambda-calculator
-      - optparse-applicative >=0.13
-      - Shellac
-      - Shellac-haskeline
+      - optparse-applicative
+      - repline
+      - rio
+      - text
+    default-extensions:
+      - BangPatterns
+      - ConstraintKinds
+      - DataKinds
+      - DefaultSignatures
+      - DeriveDataTypeable
+      - DeriveFoldable
+      - DeriveFunctor
+      - DeriveGeneric
+      - DeriveTraversable
+      - DoAndIfThenElse
+      - EmptyDataDecls
+      - ExistentialQuantification
+      - FlexibleContexts
+      - FlexibleInstances
+      - FunctionalDependencies
+      - GADTs
+      - GeneralizedNewtypeDeriving
+      - InstanceSigs
+      - KindSignatures
+      - LambdaCase
+      - MultiParamTypeClasses
+      - MultiWayIf
+      - NamedFieldPuns
+      - NoImplicitPrelude
+      - OverloadedStrings
+      - PartialTypeSignatures
+      - PatternGuards
+      - PolyKinds
+      - RankNTypes
+      - RecordWildCards
+      - ScopedTypeVariables
+      - StandaloneDeriving
+      - TupleSections
+      - TypeFamilies
+      - TypeSynonymInstances
+      - ViewPatterns
     
 tests:
   lambda-calculus-test:

@@ -81,7 +81,7 @@ tcTyApp uniqs ctx expr ty = typecheck uniqs ctx expr
 unique :: UniqueSupply t
        -> Either String t
 unique (u:_) = return u
-unique _     = fail "Unique supply ran out"
+unique _     = Left "Unique supply ran out"
 
 sub :: Eq n
     => n
