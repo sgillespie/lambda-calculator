@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Language.Lambda.Util.PrettyPrint where
 
+import Prelude
 import qualified Data.List as L
 
 class PrettyPrint a where

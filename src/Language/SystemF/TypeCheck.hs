@@ -54,7 +54,7 @@ tcApp uniqs ctx e1 e2 = do
       then return t3
       else Left $ tyMismatchMsg (TyArrow t2 t3) (TyArrow t1 t3)
 
-  where genMismatchVar expected = tyMismatchMsg expected <$> unique uniqs >>= Left
+  where genMismatchVar expected = unique uniqs >>= Left . tyMismatchMsg expected
         arrow (TyArrow t1 t2) = return (t1, t2)
         arrow t               = Left t
 

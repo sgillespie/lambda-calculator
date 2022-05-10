@@ -8,7 +8,7 @@ import Language.Lambda.Util.PrettyPrint
 spec :: Spec
 spec = describe "prettyPrint" $ do
     it "prints simple variables" $ 
-      prettyPrint (Var "x") `shouldBe` "x"
+      (prettyPrint (Var "x")::String) `shouldBe` "x"
 
     it "prints simple abstractions" $
       prettyPrint (Abs "x" (Var "x")) `shouldBe` "λx. x"

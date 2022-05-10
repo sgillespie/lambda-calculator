@@ -1,5 +1,7 @@
 module Language.Lambda.Eval where
 
+import Prelude
+
 import Data.List
 import Data.Maybe
 

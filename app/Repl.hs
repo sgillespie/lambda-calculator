@@ -16,7 +16,7 @@ import qualified Data.Map as M
 
 type Repl a = HaskelineT IO a
 
-data AppException
+newtype AppException
   = ParseError Text
 
 instance Exception AppException

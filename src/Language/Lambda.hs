@@ -11,6 +11,7 @@ module Language.Lambda (
   ) where
 
 import Control.Monad
+import Prelude
 import Text.Parsec
 
 import qualified Data.Map as Map

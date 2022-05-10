@@ -6,6 +6,7 @@ module Language.SystemF (
   parseExpr
   ) where
 
+import Prelude
 import Text.Parsec
 
 import qualified Data.Map as Map
@@ -19,5 +20,5 @@ type Globals = Map.Map String (SystemFExpr String String)
 evalString :: Globals
            -> String
            -> Either ParseError (SystemFExpr String String, Globals)
-evalString globals = fmap (flip (,) globals) . parseExpr
+evalString globals = fmap (, globals) . parseExpr
 

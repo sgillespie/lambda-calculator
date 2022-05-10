@@ -11,6 +11,55 @@ github: sgillespie/lambda-calculus
 
 dependencies:
   - base >= 4.9 && < 5
+  - rio
+
+ghc-options:
+  - -threaded
+  - -rtsopts
+  - -with-rtsopts=-N
+  - -Wall
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wpartial-fields
+  - -Wredundant-constraints
+
+default-extensions:
+  - BangPatterns
+  - ConstraintKinds
+  - DataKinds
+  - DefaultSignatures
+  - DeriveDataTypeable
+  - DeriveFoldable
+  - DeriveFunctor
+  - DeriveGeneric
+  - DeriveTraversable
+  - DoAndIfThenElse
+  - EmptyDataDecls
+  - ExistentialQuantification
+  - FlexibleContexts
+  - FlexibleInstances
+  - FunctionalDependencies
+  - GADTs
+  - GeneralizedNewtypeDeriving
+  - InstanceSigs
+  - KindSignatures
+  - LambdaCase
+  - MultiParamTypeClasses
+  - MultiWayIf
+  - NamedFieldPuns
+  - PartialTypeSignatures
+  - PatternGuards
+  - PolyKinds
+  - RankNTypes
+  - RecordWildCards
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - TupleSections
+  - TypeFamilies
+  - TypeSynonymInstances
+  - ViewPatterns
 
 library:
   source-dirs: src
@@ -24,6 +73,9 @@ library:
     - Language.SystemF.Expression
     - Language.SystemF.Parser
     - Language.SystemF.TypeCheck
+  default-extensions:
+    - NoImplicitPrelude
+    - OverloadedStrings
   dependencies:
     - containers
     - parsec
@@ -32,62 +84,16 @@ executables:
   lambda-calculator:
     main: Main.hs
     source-dirs: app
-    ghc-options:
-      - -threaded
-      - -rtsopts
-      - -with-rtsopts=-N
-      - -Wall
-      - -Wcompat
-      - -Widentities
-      - -Wincomplete-record-updates
-      - -Wincomplete-uni-patterns
-      - -Wpartial-fields
-      - -Wredundant-constraints
+    default-extensions:
+      - NoImplicitPrelude
+      - OverloadedStrings
     dependencies:
       - bytestring
       - containers
       - lambda-calculator
       - optparse-applicative
       - repline
-      - rio
       - text
-    default-extensions:
-      - BangPatterns
-      - ConstraintKinds
-      - DataKinds
-      - DefaultSignatures
-      - DeriveDataTypeable
-      - DeriveFoldable
-      - DeriveFunctor
-      - DeriveGeneric
-      - DeriveTraversable
-      - DoAndIfThenElse
-      - EmptyDataDecls
-      - ExistentialQuantification
-      - FlexibleContexts
-      - FlexibleInstances
-      - FunctionalDependencies
-      - GADTs
-      - GeneralizedNewtypeDeriving
-      - InstanceSigs
-      - KindSignatures
-      - LambdaCase
-      - MultiParamTypeClasses
-      - MultiWayIf
-      - NamedFieldPuns
-      - NoImplicitPrelude
-      - OverloadedStrings
-      - PartialTypeSignatures
-      - PatternGuards
-      - PolyKinds
-      - RankNTypes
-      - RecordWildCards
-      - ScopedTypeVariables
-      - StandaloneDeriving
-      - TupleSections
-      - TypeFamilies
-      - TypeSynonymInstances
-      - ViewPatterns
     
 tests:
   lambda-calculus-test:
@@ -111,5 +117,7 @@ tests:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
+    default-extensions:
+      - ImplicitPrelude
     dependencies:
       - hlint

@@ -1,6 +1,7 @@
 module Language.SystemF.Expression where
 
 import Data.Monoid
+import Prelude
 
 import Language.Lambda.Util.PrettyPrint
 
