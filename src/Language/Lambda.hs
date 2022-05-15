@@ -1,11 +1,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Language.Lambda (
-  Globals(..),
   LambdaExpr(..),
-  ParseError(..),
   PrettyPrint(..),
   evalExpr,
   evalString,
+  evalStringM,
+  mkEvalState,
   parseExpr,
   uniques,
   ) where
@@ -28,7 +28,16 @@ evalString :: Globals
            -> Either ParseError (LambdaExpr String, Globals)
 evalString globals str = evalExpr globals uniques <$> parseExpr str
 
+evalStringM :: String -> MonadLambda String (Either ParseError (LambdaExpr String))
+evalStringM str = do
+  let expr = parseExpr str
+
+  case expr of
+    Left err -> return $ Left err
+    Right expr' -> do
+      res <- evalExprM expr'
+      return $ Right res
+
 uniques :: [String]
 uniques = concatMap (\p -> map (:p) . reverse $ ['a'..'z']) suffix
   where suffix = "" : map show [(0::Int)..]
-

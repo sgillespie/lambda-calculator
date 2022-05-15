@@ -10,6 +10,7 @@ import Data.Text (singleton)
 import Data.Text.IO (putStrLn)
 import Data.Version (showVersion)
 import RIO
+import RIO.State
 import RIO.Text (unpack)
 import System.Console.Repline
 import qualified Data.Map as M
@@ -72,9 +73,12 @@ initializer = liftIO $ putStrLn greeting
           <> ")\nType :h for help\n"
 
 evalLambda :: String -> Repl ()
-evalLambda input = case Lambda.evalString M.empty input of
-  Left err -> liftIO . putStrLn . toText . parseError $ err
-  Right (res, _) -> liftIO . putStrLn . fromString . prettyPrint $ res
+evalLambda input = do
+  let res = evalState (Lambda.evalStringM input) (Lambda.mkEvalState Lambda.uniques)
+
+  case res of
+    Left err -> liftIO . putStrLn . toText . parseError $ err
+    Right res -> liftIO . putStrLn . fromString . prettyPrint $ res
 
 evalSystemF :: String -> Repl ()
 evalSystemF input = case SystemF.evalString M.empty input of

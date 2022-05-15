@@ -1,4 +1,7 @@
-module Language.Lambda.Parser (parseExpr) where
+module Language.Lambda.Parser
+  ( parseExpr,
+    module Text.Parsec
+  ) where
 
 import Control.Monad
 import Prelude hiding (abs, curry)

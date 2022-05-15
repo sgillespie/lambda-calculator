@@ -1,13 +1,32 @@
-module Language.Lambda.Eval where
+module Language.Lambda.Eval
+  ( EvalState(..),
+    MonadLambda(),
+    mkEvalState,
+    evalExprM,
+    evalExpr,
+    subGlobals,
+    betaReduce,
+    alphaConvert,
+    etaConvert,
+    freeVarsOf
+  ) where
 
-import Prelude
-
-import Data.List
-import Data.Maybe
-
-import qualified Data.Map as Map
+import RIO
+import RIO.List (find)
+import RIO.State
+import qualified RIO.Map as Map
 
 import Language.Lambda.Expression
+
+data EvalState name = EvalState
+  { esGlobals :: Map name (LambdaExpr name),
+    esUniques :: [name] -- ^ Unused unique names
+  }
+
+mkEvalState :: [name] -> EvalState name
+mkEvalState = EvalState Map.empty
+
+type MonadLambda name = State (EvalState name)
 
 -- | Evaluate an expression
 evalExpr :: (Eq n, Ord n)
@@ -21,6 +40,21 @@ evalExpr globals uniqs (Let name expr)
 evalExpr globals uniqs expr = (evalExpr' uniqs expr', globals)
   where expr' = subGlobals globals uniqs expr
 
+evalExprM :: Ord name => LambdaExpr name -> MonadLambda name (LambdaExpr name)
+evalExprM (Let name expr) = do
+  EvalState{..} <- get
+  let expr' = evalExpr' esUniques $ subGlobals esGlobals esUniques expr
+      globals = Map.insert name expr' esGlobals
+
+  modify (\es -> es { esGlobals = globals})
+  return $ Let name expr'
+
+evalExprM expr = do
+  EvalState{..} <- get
+  let expr' = subGlobals esGlobals esUniques expr
+
+  return $ evalExpr' esUniques expr'
+  
 subGlobals :: (Eq n, Ord n)
            => Map.Map n (LambdaExpr n) -- ^ globals
            -> [n]                      -- ^ unique supply
