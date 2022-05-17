@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Language.Lambda (
+  EvalState(..),
   LambdaExpr(..),
   PrettyPrint(..),
   evalExpr,

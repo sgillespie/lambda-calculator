@@ -15,7 +15,7 @@ import RIO.Text (unpack)
 import System.Console.Repline
 import qualified Data.Map as M
 
-type Repl a = HaskelineT IO a
+type Repl a = HaskelineT (StateT (Lambda.EvalState String) IO) a
 
 newtype AppException
   = ParseError Text
@@ -32,7 +32,7 @@ parseError :: Show show => show -> AppException
 parseError = ParseError . fromString . show
 
 runRepl :: Language -> IO ()
-runRepl language = evalReplOpts replOpts
+runRepl language = evalStateT (evalReplOpts replOpts) initialState
   where replOpts = ReplOpts
           { banner = const $ unpack <$> prompt language,
             command = evalInput language,
@@ -43,6 +43,8 @@ runRepl language = evalReplOpts replOpts
             initialiser = initializer,
             finaliser = return Exit
           }
+
+        initialState = Lambda.mkEvalState Lambda.uniques
 
 prompt :: Language -> Repl Text
 prompt language = pure $ prefix language <> " > "
@@ -74,7 +76,10 @@ initializer = liftIO $ putStrLn greeting
 
 evalLambda :: String -> Repl ()
 evalLambda input = do
-  let res = evalState (Lambda.evalStringM input) (Lambda.mkEvalState Lambda.uniques)
+  state <- get
+  
+  let (res, state') = runState (Lambda.evalStringM input) state
+  put state'
 
   case res of
     Left err -> liftIO . putStrLn . toText . parseError $ err
