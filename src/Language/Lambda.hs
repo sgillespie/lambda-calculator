@@ -16,9 +16,10 @@ import Text.Parsec
 import Language.Lambda.Eval
 import Language.Lambda.Expression
 import Language.Lambda.Parser
+import Language.Lambda.State (Eval(), mkEvalState)
 import Language.Lambda.Util.PrettyPrint
 
-evalString :: String -> MonadLambda String (Either ParseError (LambdaExpr String))
+evalString :: String -> Eval String (Either ParseError (LambdaExpr String))
 evalString str = do
   let expr = parseExpr str
 
