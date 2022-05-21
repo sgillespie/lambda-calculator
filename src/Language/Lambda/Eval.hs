@@ -2,7 +2,6 @@ module Language.Lambda.Eval
   ( EvalState(..),
     MonadLambda(),
     mkEvalState,
-    evalExprM,
     evalExpr,
     subGlobals,
     betaReduce,
@@ -29,75 +28,65 @@ mkEvalState = EvalState Map.empty
 type MonadLambda name = State (EvalState name)
 
 -- | Evaluate an expression
-evalExpr :: (Eq n, Ord n)
-         => Map.Map n (LambdaExpr n) -- ^ globals
-         -> [n]                      -- ^ unique supply
-         -> LambdaExpr n             -- ^ the expression to evaluate
-         -> (LambdaExpr n, Map.Map n (LambdaExpr n))
-evalExpr globals uniqs (Let name expr)
-  = (Let name expr', Map.insert name expr' globals)
-  where expr' = evalExpr' uniqs (subGlobals globals uniqs expr)
-evalExpr globals uniqs expr = (evalExpr' uniqs expr', globals)
-  where expr' = subGlobals globals uniqs expr
+evalExpr :: Ord name => LambdaExpr name -> MonadLambda name (LambdaExpr name)
+evalExpr (Let name expr) = do
+  globals <- gets esGlobals
+  expr' <- evalExpr' $ subGlobals globals expr
 
-evalExprM :: Ord name => LambdaExpr name -> MonadLambda name (LambdaExpr name)
-evalExprM (Let name expr) = do
-  EvalState{..} <- get
-  let expr' = evalExpr' esUniques $ subGlobals esGlobals esUniques expr
-      globals = Map.insert name expr' esGlobals
-
-  modify (\es -> es { esGlobals = globals})
+  -- Update state
+  let globals' = Map.insert name expr' globals
+  modify (\es -> es { esGlobals = globals'})
+  
   return $ Let name expr'
 
-evalExprM expr = do
-  EvalState{..} <- get
-  let expr' = subGlobals esGlobals esUniques expr
-
-  return $ evalExpr' esUniques expr'
-  
-subGlobals :: (Eq n, Ord n)
-           => Map.Map n (LambdaExpr n) -- ^ globals
-           -> [n]                      -- ^ unique supply
-           -> LambdaExpr n             -- ^ the expression
-           -> LambdaExpr n
-subGlobals globals uniqs expr@(Var x) = Map.findWithDefault expr x globals
-subGlobals globals uniqs (App e1 e2)  = App (subGlobals globals uniqs e1)
-                                            (subGlobals globals uniqs e2)
-subGlobals globals uniqs (Abs n expr) = Abs n expr'
-  where expr' | Map.member n globals = expr
-              | otherwise            = subGlobals globals uniqs expr
-        fvs = freeVarsOf expr
-subGlobals _ _ expr = expr
+evalExpr expr = do
+  globals <- gets esGlobals
+  evalExpr' $ subGlobals globals expr
 
 -- | Evaluate an expression; does not support `let`
-evalExpr' :: Eq n
-          => [n]                      -- ^ unique supply
-          -> LambdaExpr n             -- ^ the expression to evaluate
-          -> LambdaExpr n
-evalExpr' _     expr@(Var _) = expr
-evalExpr' uniqs (Abs name expr) = Abs name . evalExpr' uniqs $ expr
-evalExpr' uniqs (Let name expr) = Let name . evalExpr' uniqs $ expr
-evalExpr' uniqs (App e1 e2)     = betaReduce uniqs (evalExpr' uniqs e1)
-                                                   (evalExpr' uniqs e2)
+evalExpr' :: Eq name => LambdaExpr name -> MonadLambda name (LambdaExpr name)
+evalExpr' expr@(Var _) = return expr
+evalExpr' (Abs name expr) = Abs name <$> evalExpr' expr
+evalExpr' (Let name expr) = Let name <$> evalExpr' expr
+evalExpr' (App e1 e2) = do
+  e1' <- evalExpr' e1
+  e2' <- evalExpr' e2
+  betaReduce e1' e2'
 
-betaReduce :: Eq n
-           => [n]
-           -> LambdaExpr n
-           -> LambdaExpr n
-           -> LambdaExpr n
-betaReduce _     expr@(Var _) e2 = App expr e2
-betaReduce uniqs (App e1 e1') e2 = App (betaReduce uniqs e1 e1') e2
-betaReduce uniqs (Abs n  e1)  e2 = evalExpr' uniqs . sub n e1' $ e2
-  where fvs = freeVarsOf e2
-        e1' = alphaConvert uniqs fvs e1
+-- | Look up free vars that have global bindings and substitute them
+subGlobals :: Ord name => Map name (LambdaExpr name) -> LambdaExpr name -> LambdaExpr name
+subGlobals globals expr@(Var x) = Map.findWithDefault expr x globals
+subGlobals globals (App e1 e2) = App (subGlobals globals e1) (subGlobals globals e2)
+subGlobals globals (Abs name expr) = Abs name expr'
+  where expr'
+          | Map.member name globals = expr
+          | otherwise = subGlobals globals expr
+subGlobals _ expr = expr
 
-alphaConvert :: Eq n => [n] -> [n] -> LambdaExpr n -> LambdaExpr n
-alphaConvert uniqs freeVars (Abs name body)
-  | name `elem` freeVars = Abs uniq . sub name body . Var $ uniq
-  | otherwise            = Abs name . alphaConvert uniqs freeVars $ body
-  where uniq = fromMaybe name (find (`notElem` freeVars) uniqs)
-alphaConvert _ _ e = e
+-- | Function application
+betaReduce :: Eq name => LambdaExpr name -> LambdaExpr name -> MonadLambda name (LambdaExpr name)
+betaReduce expr@(Var _) e2 = return $ App expr e2
+betaReduce (App e1 e1') e2 = do
+  reduced <- betaReduce e1 e1'
+  return $ App reduced e2
+betaReduce (Abs n e1) e2 = do
+  e1' <- alphaConvert (freeVarsOf e2) e1
+  evalExpr' $ substitute e1' n e2
+betaReduce e1 e2 = return $ App e1 e2
 
+-- | Rename abstraction parameters to avoid name captures
+alphaConvert :: Eq name => [name] -> LambdaExpr name -> MonadLambda name (LambdaExpr name)
+alphaConvert freeVars (Abs name body) = do
+  uniques <- gets esUniques
+  let nextVar = fromMaybe name $ find (`notElem` freeVars) uniques
+
+  if name `elem` freeVars
+    then return $ Abs nextVar (substitute body name (Var nextVar))
+    else Abs name <$> alphaConvert freeVars body
+
+alphaConvert _ expr = return expr
+
+-- | Eliminite superfluous abstractions
 etaConvert :: Eq n => LambdaExpr n -> LambdaExpr n
 etaConvert (Abs n (App e1 (Var n')))
   | n == n'   = etaConvert e1
@@ -110,20 +99,27 @@ etaConvert (Abs n e@(Abs _ _))
 etaConvert (Abs n expr) = Abs n (etaConvert expr)
 etaConvert (App e1 e2)  = App (etaConvert e1) (etaConvert e2)
 etaConvert expr@(Var _) = expr
+etaConvert expr = expr
 
-sub :: Eq n => n -> LambdaExpr n -> LambdaExpr n -> LambdaExpr n
-sub name b@(Var name') expr
-  | name == name' = expr
-  | otherwise     = b
+-- | Substitute an expression for a variable name in another expression
+substitute :: Eq name => LambdaExpr name -> name -> LambdaExpr name -> LambdaExpr name
+substitute subExpr@(Var name) subName inExpr
+  | name == subName = inExpr
+  | otherwise = subExpr
 
-sub name b@(Abs name' expr') expr
-  | name == name' = b
-  | otherwise     = Abs name' (sub name expr' expr)
+substitute subExpr@(Abs name expr) subName inExpr
+  | name == subName = subExpr
+  | otherwise = Abs name (substitute expr subName inExpr)
 
-sub name (App e1 e2) expr = App (sub name e1 expr)
-                                (sub name e2 expr)
+substitute (App e1 e2) subName inExpr
+  = App (sub e1) (sub e2)
+  where sub expr = substitute expr subName inExpr
 
+substitute _ _ expr = expr
+
+-- | Find the free variables in an expression
 freeVarsOf :: Eq n => LambdaExpr n -> [n]
 freeVarsOf (Abs n expr) = filter (/=n) . freeVarsOf $ expr
 freeVarsOf (App e1 e2)  = freeVarsOf e1 ++ freeVarsOf e2
 freeVarsOf (Var n)      = [n]
+freeVarsOf _ = []

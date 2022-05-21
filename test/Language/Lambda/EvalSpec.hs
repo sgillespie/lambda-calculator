@@ -1,18 +1,17 @@
 module Language.Lambda.EvalSpec where
 
-import Data.Map (fromList, empty, insert)
+import Data.Map (fromList)
 import Test.Hspec
 import RIO.State
 
 import Language.Lambda
 import Language.Lambda.Eval
 
-
 spec :: Spec
 spec = do
   describe "evalExpr" $ do
-    let evalExpr' expr = evalState (evalExprM expr) (mkEvalState uniques)
-    
+    let evalExpr' expr = evalState (evalExpr expr) (mkEvalState uniques)
+
     it "beta reduces" $ do
       let expr = App (Abs "x" (Var "x")) (Var "z")
       evalExpr' expr `shouldBe` Var "z"
@@ -36,21 +35,14 @@ spec = do
 
     it "let expressions update state" $ do
       let res = flip evalState (mkEvalState uniques) $ do
-            _ <- evalExprM $ Let "w" (Var "x")
-            evalExprM $ Var "w"
+            _ <- evalExpr $ Let "w" (Var "x")
+            evalExpr $ Var "w"
 
       res `shouldBe` Var "x"
 
-    it "subs global variables" $ do
-      let globals = insert "w" (Var "x") empty
-          expr = Var "w"
-
-      fst (evalExpr globals uniques expr)
-        `shouldBe` Var "x"
-
   describe "subGlobals" $ do
     let globals = fromList [("w", Var "x")]
-        subGlobals' = subGlobals globals ["a"]
+        subGlobals' = subGlobals globals
     
     it "subs simple variables" $
       subGlobals' (Var "w") `shouldBe` Var "x"
@@ -64,7 +56,7 @@ spec = do
       subGlobals' expr `shouldBe` Abs "a" (Var "x")
 
   describe "betaReduce" $ do
-    let betaReduce' = betaReduce []
+    let betaReduce' e1 e2 = evalState (betaReduce e1 e2) (mkEvalState [])
     
     it "reduces simple applications" $ do
       let e1 = Abs "x" (Var "x")
@@ -97,17 +89,20 @@ spec = do
       betaReduce' e1 e2 `shouldBe` Abs "x" (Var "x")
 
   describe "alphaConvert" $ do
+    let alphaConvert' uniques' fvs expr
+          = evalState (alphaConvert fvs expr) (mkEvalState uniques')
+    
     it "alpha converts simple expressions" $ do
       let freeVars = ["x"]
           expr = Abs "x" (Var "x")
           uniques' = ["y"]
-      alphaConvert uniques' freeVars expr `shouldBe` Abs "y" (Var "y")
+      alphaConvert' uniques' freeVars expr `shouldBe` Abs "y" (Var "y")
   
     it "avoids captures" $ do
       let freeVars = ["x"]
           expr = Abs "x" (Var "x")
           uniques' = ["x", "y"]
-      alphaConvert uniques' freeVars expr `shouldBe` Abs "y" (Var "y")
+      alphaConvert' uniques' freeVars expr `shouldBe` Abs "y" (Var "y")
 
   describe "etaConvert" $ do
     it "eta converts simple expressions" $ do

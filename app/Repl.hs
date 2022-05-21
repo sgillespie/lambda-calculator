@@ -78,7 +78,7 @@ evalLambda :: String -> Repl ()
 evalLambda input = do
   state <- get
   
-  let (res, state') = runState (Lambda.evalStringM input) state
+  let (res, state') = runState (Lambda.evalString input) state
   put state'
 
   case res of
