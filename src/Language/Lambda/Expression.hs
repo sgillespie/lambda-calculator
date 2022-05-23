@@ -1,62 +1,54 @@
-{-# LANGUAGE FlexibleInstances #-}
-module Language.Lambda.Expression where
+module Language.Lambda.Expression
+  ( LambdaExpr(..),
+    prettyPrint
+  ) where
 
-import Prelude hiding (uncurry)
-
-import Language.Lambda.Util.PrettyPrint
+import RIO
+import Prettyprinter
+import Prettyprinter.Render.Text (renderLazy)
+import qualified RIO.Text.Lazy as Text
 
 data LambdaExpr name
-  = Var name
-  | App (LambdaExpr name) (LambdaExpr name)
-  | Abs name (LambdaExpr name)
-  | Let name (LambdaExpr name)
+  = Var name                                -- ^ Variables
+  | App (LambdaExpr name) (LambdaExpr name) -- ^ Application
+  | Abs name (LambdaExpr name)              -- ^ Abstractions
+  | Let name (LambdaExpr name)              -- ^ Let bindings
   deriving (Eq, Show)
 
--- Pretty printing
-instance PrettyPrint a => PrettyPrint (LambdaExpr a) where
-  prettyPrint = prettyPrint . pprExpr empty
+instance Pretty name => Pretty (LambdaExpr name) where
+  pretty (Var name) = pretty name
+  pretty (Abs name body) = prettyAbs name body
+  pretty (App e1 e2) = prettyApp e1 e2
+  pretty (Let name body) = prettyLet name body
 
--- Pretty print a lambda expression
-pprExpr :: PrettyPrint n => PDoc String -> LambdaExpr n -> PDoc String
-pprExpr pdoc (Var n)      = prettyPrint n `add` pdoc
-pprExpr pdoc (Abs n body) = pprAbs pdoc n body
-pprExpr pdoc (App e1 e2)  = pprApp pdoc e1 e2
-pprExpr pdoc (Let n expr) = pprLet pdoc n expr
+prettyPrint :: Pretty name => LambdaExpr name -> Text.Text
+prettyPrint expr = renderLazy docStream
+  where docStream = layoutPretty defaultLayoutOptions (pretty expr)
 
--- Pretty print an abstraction 
-pprAbs :: PrettyPrint n => PDoc String -> n -> LambdaExpr n -> PDoc String
-pprAbs pdoc n body
-  = between vars' [lambda] ". " (pprExpr pdoc body')
-  where (vars, body') = uncurry n body
-        vars' = intercalate (map prettyPrint vars) " " empty
+prettyAbs :: Pretty name => name -> LambdaExpr name -> Doc a
+prettyAbs name body
+  = lambda' <> hsep (map pretty names) <> dot
+    <+> pretty body'
+  where (names, body') = uncurryAbs name body
 
--- Pretty print an application
-pprApp :: PrettyPrint n
-        => PDoc String
-        -> LambdaExpr n
-        -> LambdaExpr n
-        -> PDoc String
-pprApp pdoc e1@(Abs _ _) e2@(Abs _ _) = betweenParens (pprExpr pdoc e1) pdoc
-  `mappend` addSpace (betweenParens (pprExpr pdoc e2) pdoc)
-pprApp pdoc e1 e2@(App _ _) = pprExpr pdoc e1
-  `mappend` addSpace (betweenParens (pprExpr pdoc e2) pdoc)
-pprApp pdoc e1 e2@(Abs _ _) = pprExpr pdoc e1
-  `mappend` addSpace (betweenParens (pprExpr pdoc e2) pdoc)
-pprApp pdoc e1@(Abs _ _) e2 = betweenParens (pprExpr pdoc e1) pdoc
-  `mappend` addSpace (pprExpr pdoc e2)
-pprApp pdoc e1 e2
-  = pprExpr pdoc e1 `mappend` addSpace (pprExpr pdoc e2)
+prettyApp :: Pretty name => LambdaExpr name -> LambdaExpr name -> Doc a
+prettyApp e1@(Abs _ _) e2@(Abs _ _) = parens (pretty e1) <+> parens (pretty e2)
+prettyApp e1@(Abs _ _) e2 = parens (pretty e1) <+> pretty e2
+prettyApp e1 e2@(Abs _ _) = pretty e1 <+> parens (pretty e2)
+prettyApp e1 e2@(App _ _) = pretty e1 <+> parens (pretty e2)
+prettyApp e1 e2 = pretty e1 <+> pretty e2
 
-pprLet :: PrettyPrint n
-       => PDoc String
-       -> n
-       -> LambdaExpr n
-       -> PDoc String
-pprLet pdoc name expr
-  = intercalate ss " " pdoc
-  where ss = ["let", prettyPrint name, "=", prettyPrint expr]
+prettyLet :: Pretty name => name -> LambdaExpr name -> Doc a
+prettyLet name body
+  = pretty ("let"::Text)
+    <+> pretty name
+    <+> "="
+    <+> pretty body
 
-uncurry :: n -> LambdaExpr n -> ([n], LambdaExpr n)
-uncurry n = uncurry' [n]
+lambda' :: Doc ann
+lambda' = pretty 'λ'
+
+uncurryAbs :: n -> LambdaExpr n -> ([n], LambdaExpr n)
+uncurryAbs n = uncurry' [n]
   where uncurry' ns (Abs n' body') = uncurry' (n':ns) body'
         uncurry' ns body'          = (reverse ns, body')

@@ -1,12 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Language.Lambda (
   EvalState(..),
-  LambdaExpr(..),
-  PrettyPrint(..),
   evalString,
-  mkEvalState,
+  mkEvalState,  
   parseExpr,
   uniques,
+
+  module Language.Lambda.Expression
   ) where
 
 import Control.Monad
@@ -17,7 +17,6 @@ import Language.Lambda.Eval
 import Language.Lambda.Expression
 import Language.Lambda.Parser
 import Language.Lambda.State (Eval(), mkEvalState)
-import Language.Lambda.Util.PrettyPrint
 
 evalString :: String -> Eval String (Either ParseError (LambdaExpr String))
 evalString str = do

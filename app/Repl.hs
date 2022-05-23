@@ -14,6 +14,7 @@ import RIO.State
 import RIO.Text (unpack)
 import System.Console.Repline
 import qualified Data.Map as M
+import qualified RIO.Text.Lazy as Text
 
 type Repl a = HaskelineT (StateT (Lambda.EvalState String) IO) a
 
@@ -76,14 +77,14 @@ initializer = liftIO $ putStrLn greeting
 
 evalLambda :: String -> Repl ()
 evalLambda input = do
-  state <- get
+  state' <- get
   
-  let (res, state') = runState (Lambda.evalString input) state
-  put state'
+  let (res, resState) = runState (Lambda.evalString input) state'
+  put resState
 
   case res of
     Left err -> liftIO . putStrLn . toText . parseError $ err
-    Right res -> liftIO . putStrLn . fromString . prettyPrint $ res
+    Right res' -> liftIO . putStrLn . Text.toStrict . Lambda.prettyPrint $ res'
 
 evalSystemF :: String -> Repl ()
 evalSystemF input = case SystemF.evalString M.empty input of

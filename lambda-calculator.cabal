@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 53ca8366257db1c7b558fc89487aa75f2d1f584de7190bd9dbf923bd99114144
+-- hash: efcece343721d21f32abd0edb98066bf4fbcc9213c5de92e90539567ef03350b
 
 name:           lambda-calculator
 version:        2.0.0
@@ -82,6 +82,7 @@ library
       base >=4.9 && <5
     , containers
     , parsec
+    , prettyprinter
     , rio
   default-language: Haskell2010
 
@@ -252,5 +253,6 @@ test-suite lambda-calculus-test
     , containers
     , hspec
     , lambda-calculator
+    , prettyprinter
     , rio
   default-language: Haskell2010

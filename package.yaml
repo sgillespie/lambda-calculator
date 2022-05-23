@@ -79,6 +79,7 @@ library:
   dependencies:
     - containers
     - parsec
+    - prettyprinter
   
 executables:
   lambda-calculator:
@@ -104,10 +105,11 @@ tests:
       - -rtsopts
       - -with-rtsopts=-N
     dependencies:
-      - lambda-calculator
+      - HUnit
       - containers
       - hspec
-      - HUnit
+      - lambda-calculator
+      - prettyprinter
       
   lambda-calculus-lint:
     main: HLint.hs
