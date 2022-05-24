@@ -68,6 +68,7 @@ library:
     - Language.Lambda.Expression
     - Language.Lambda.Eval
     - Language.Lambda.Parser
+    - Language.Lambda.State
     - Language.Lambda.Util.PrettyPrint
     - Language.SystemF
     - Language.SystemF.Expression

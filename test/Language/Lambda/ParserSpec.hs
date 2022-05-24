@@ -53,5 +53,3 @@ spec = describe "parseExpr" $ do
           ]
     
     mapM_ (flip shouldSatisfy isRight . parseExpr) exprs
-            
-

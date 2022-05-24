@@ -1,5 +1,7 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 module Language.Lambda.HspecUtils where
 
+import RIO
 import RIO.State (evalState)
 import Test.Hspec
 

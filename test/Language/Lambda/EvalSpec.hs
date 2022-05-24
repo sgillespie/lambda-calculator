@@ -1,6 +1,8 @@
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 module Language.Lambda.EvalSpec where
 
 import Data.Map (fromList)
+import RIO
 import Test.Hspec
 import RIO.State
 
@@ -41,7 +43,8 @@ spec = do
       res `shouldBe` Var "x"
 
   describe "subGlobals" $ do
-    let globals = fromList [("w", Var "x")]
+    let globals :: Map Text (LambdaExpr Text)
+        globals = fromList [("w", Var "x")] 
         subGlobals' = subGlobals globals
     
     it "subs simple variables" $
@@ -56,7 +59,8 @@ spec = do
       subGlobals' expr `shouldBe` Abs "a" (Var "x")
 
   describe "betaReduce" $ do
-    let betaReduce' e1 e2 = evalState (betaReduce e1 e2) (mkEvalState [])
+    let betaReduce' :: LambdaExpr Text -> LambdaExpr Text -> LambdaExpr Text
+        betaReduce' e1 e2 = evalState (betaReduce e1 e2) (mkEvalState [])
     
     it "reduces simple applications" $ do
       let e1 = Abs "x" (Var "x")
@@ -89,11 +93,12 @@ spec = do
       betaReduce' e1 e2 `shouldBe` Abs "x" (Var "x")
 
   describe "alphaConvert" $ do
-    let alphaConvert' uniques' fvs expr
+    let alphaConvert' :: [Text] -> [Text] -> LambdaExpr Text -> LambdaExpr Text
+        alphaConvert' uniques' fvs expr
           = evalState (alphaConvert fvs expr) (mkEvalState uniques')
     
     it "alpha converts simple expressions" $ do
-      let freeVars = ["x"]
+      let freeVars = ["x"] :: [Text]
           expr = Abs "x" (Var "x")
           uniques' = ["y"]
       alphaConvert' uniques' freeVars expr `shouldBe` Abs "y" (Var "y")
@@ -106,35 +111,44 @@ spec = do
 
   describe "etaConvert" $ do
     it "eta converts simple expressions" $ do
-      let expr = Abs "x" $ App (Var "f") (Var "x")
+      let expr :: LambdaExpr Text
+          expr = Abs "x" $ App (Var "f") (Var "x") :: LambdaExpr Text
       etaConvert expr `shouldBe` Var "f" 
 
     it "eta converts nested applications" $ do
-      let expr = Abs "y" $ App (App (Var "f") (Var "x")) (Var "y")
+      let expr :: LambdaExpr Text
+          expr = Abs "y" $ App (App (Var "f") (Var "x")) (Var "y")
       etaConvert expr `shouldBe` App (Var "f") (Var "x")
 
-      let expr' = Abs "x" $ Abs "y" (App (App (Var "f") (Var "x")) (Var "y"))
+      let expr' :: LambdaExpr Text
+          expr' = Abs "x" $ Abs "y" (App (App (Var "f") (Var "x")) (Var "y"))
       etaConvert expr' `shouldBe` Var "f" 
 
-      let expr'' = Abs "x" (Abs "y" (App (Var "y") (Var "x")))
+      let expr'' :: LambdaExpr Text
+          expr'' = Abs "x" (Abs "y" (App (Var "y") (Var "x")))
       etaConvert expr'' `shouldBe` expr''
 
-      let expr''' = Abs "f" (Abs "x" (Var "x"))
+      let expr''' :: LambdaExpr Text
+          expr''' = Abs "f" (Abs "x" (Var "x"))
       etaConvert expr''' `shouldBe` expr'''
 
     it "ignores non-eta convertable expressions" $ do
-      let expr = Abs "x" $ Var "x"
+      let expr :: LambdaExpr Text
+          expr = Abs "x" $ Var "x"
       etaConvert expr `shouldBe` expr
 
   describe "freeVarsOf" $ do
+    let freeVarsOf' :: LambdaExpr Text -> [Text]
+        freeVarsOf' = freeVarsOf
+    
     it "Returns simple vars" $
-      freeVarsOf (Var "x") `shouldBe` ["x"]
+      freeVarsOf' (Var "x") `shouldBe` ["x"]
   
     it "Does not return bound vars" $
-      freeVarsOf (Abs "x" (Var "x")) `shouldBe` []
+      freeVarsOf' (Abs "x" (Var "x")) `shouldBe` []
 
     it "Returns nested simple vars" $
-      freeVarsOf (Abs "x" (Var "y")) `shouldBe` ["y"]
+      freeVarsOf' (Abs "x" (Var "y")) `shouldBe` ["y"]
 
     it "Returns applied simple vars" $
-      freeVarsOf (App (Var "x") (Var "y")) `shouldBe` ["x", "y"]
+      freeVarsOf' (App (Var "x") (Var "y")) `shouldBe` ["x", "y"]
