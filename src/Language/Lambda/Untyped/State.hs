@@ -1,4 +1,4 @@
-module Language.Lambda.State
+module Language.Lambda.Untyped.State
   ( EvalState(..),
     Eval(),
     Globals(),
@@ -11,7 +11,7 @@ module Language.Lambda.State
     setUniques
   ) where
 
-import Language.Lambda.Expression 
+import Language.Lambda.Untyped.Expression 
 
 import RIO
 import RIO.State

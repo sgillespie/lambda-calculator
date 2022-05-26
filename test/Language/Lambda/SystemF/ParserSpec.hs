@@ -1,11 +1,11 @@
-module Language.SystemF.ParserSpec (spec) where
+module Language.Lambda.SystemF.ParserSpec (spec) where
 
 import Data.Either
 
 import Test.Hspec
 
-import Language.SystemF.Expression
-import Language.SystemF.Parser
+import Language.Lambda.SystemF.Expression
+import Language.Lambda.SystemF.Parser
 
 spec :: Spec
 spec = do

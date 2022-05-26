@@ -1,22 +1,22 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Language.Lambda (
+module Language.Lambda.Untyped (
   EvalState(..),
   evalString,
   mkEvalState,  
   parseExpr,
   uniques,
 
-  module Language.Lambda.Expression
+  module Language.Lambda.Untyped.Expression
   ) where
 
 import Control.Monad
 import Prelude
 import Text.Parsec
 
-import Language.Lambda.Eval
-import Language.Lambda.Expression
-import Language.Lambda.Parser
-import Language.Lambda.State (Eval(), mkEvalState)
+import Language.Lambda.Untyped.Eval
+import Language.Lambda.Untyped.Expression
+import Language.Lambda.Untyped.Parser
+import Language.Lambda.Untyped.State (Eval(), mkEvalState)
 
 evalString :: String -> Eval String (Either ParseError (LambdaExpr String))
 evalString str = do

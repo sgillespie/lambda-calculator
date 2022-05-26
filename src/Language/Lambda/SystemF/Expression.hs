@@ -1,4 +1,4 @@
-module Language.SystemF.Expression where
+module Language.Lambda.SystemF.Expression where
 
 import Data.Monoid
 import Prelude

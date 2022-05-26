@@ -1,4 +1,4 @@
-module Language.Lambda.Eval
+module Language.Lambda.Untyped.Eval
   ( EvalState(..),
     evalExpr,
     subGlobals,
@@ -12,8 +12,8 @@ import RIO
 import RIO.List (find)
 import qualified RIO.Map as Map
 
-import Language.Lambda.Expression
-import Language.Lambda.State
+import Language.Lambda.Untyped.Expression
+import Language.Lambda.Untyped.State
 
 -- | Evaluate an expression
 evalExpr :: Ord name => LambdaExpr name -> Eval name (LambdaExpr name)

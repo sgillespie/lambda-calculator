@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3ae2117b89b2fbdb505ccc075d8f1ded7f687a0359ecb78fa0cbf55a0a45958c
+-- hash: 17d6f0768ed1aa00b8532e04e7e20c763b4d40206a6e1f527ffda4f8307a0b49
 
 name:           lambda-calculator
 version:        2.0.0
@@ -26,16 +26,16 @@ source-repository head
 
 library
   exposed-modules:
-      Language.Lambda
-      Language.Lambda.Expression
-      Language.Lambda.Eval
-      Language.Lambda.Parser
-      Language.Lambda.State
+      Language.Lambda.Untyped
+      Language.Lambda.Untyped.Expression
+      Language.Lambda.Untyped.Eval
+      Language.Lambda.Untyped.Parser
+      Language.Lambda.Untyped.State
       Language.Lambda.Util.PrettyPrint
-      Language.SystemF
-      Language.SystemF.Expression
-      Language.SystemF.Parser
-      Language.SystemF.TypeCheck
+      Language.Lambda.SystemF
+      Language.Lambda.SystemF.Expression
+      Language.Lambda.SystemF.Parser
+      Language.Lambda.SystemF.TypeCheck
   other-modules:
       Paths_lambda_calculator
   hs-source-dirs:
@@ -195,19 +195,19 @@ test-suite lambda-calculus-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Language.Lambda.EvalSpec
-      Language.Lambda.Examples.BoolSpec
-      Language.Lambda.Examples.NatSpec
-      Language.Lambda.Examples.PairSpec
-      Language.Lambda.ExpressionSpec
-      Language.Lambda.HspecUtils
-      Language.Lambda.ParserSpec
+      Language.Lambda.SystemF.ExpressionSpec
+      Language.Lambda.SystemF.ParserSpec
+      Language.Lambda.SystemF.TypeCheckSpec
+      Language.Lambda.SystemFSpec
+      Language.Lambda.Untyped.EvalSpec
+      Language.Lambda.Untyped.Examples.BoolSpec
+      Language.Lambda.Untyped.Examples.NatSpec
+      Language.Lambda.Untyped.Examples.PairSpec
+      Language.Lambda.Untyped.ExpressionSpec
+      Language.Lambda.Untyped.HspecUtils
+      Language.Lambda.Untyped.ParserSpec
+      Language.Lambda.UntypedSpec
       Language.Lambda.Util.PrettyPrintSpec
-      Language.LambdaSpec
-      Language.SystemF.ExpressionSpec
-      Language.SystemF.ParserSpec
-      Language.SystemF.TypeCheckSpec
-      Language.SystemFSpec
       Paths_lambda_calculator
   hs-source-dirs:
       test

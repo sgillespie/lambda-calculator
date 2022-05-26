@@ -1,4 +1,4 @@
-module Language.SystemF.Parser (
+module Language.Lambda.SystemF.Parser (
   parseExpr,
   parseType
   ) where
@@ -10,7 +10,7 @@ import Prelude hiding (abs)
 import Text.Parsec
 import Text.Parsec.String
 
-import Language.SystemF.Expression
+import Language.Lambda.SystemF.Expression
 
 parseExpr :: String -> Either ParseError (SystemFExpr String String)
 parseExpr = parse (whitespace *> expr <* eof) ""

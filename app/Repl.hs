@@ -3,8 +3,8 @@ module Repl (runRepl) where
 import CliOptions (Language(..))
 import Language.Lambda.Util.PrettyPrint
 import Paths_lambda_calculator (version)
-import qualified Language.Lambda as Lambda
-import qualified Language.SystemF as SystemF
+import qualified Language.Lambda.Untyped as Untyped
+import qualified Language.Lambda.SystemF as SystemF
 
 import Data.Text (singleton)
 import Data.Text.IO (putStrLn)
@@ -16,7 +16,7 @@ import System.Console.Repline
 import qualified Data.Map as M
 import qualified RIO.Text.Lazy as Text
 
-type Repl a = HaskelineT (StateT (Lambda.EvalState String) IO) a
+type Repl a = HaskelineT (StateT (Untyped.EvalState String) IO) a
 
 newtype AppException
   = ParseError Text
@@ -45,7 +45,7 @@ runRepl language = evalStateT (evalReplOpts replOpts) initialState
             finaliser = return Exit
           }
 
-        initialState = Lambda.mkEvalState Lambda.uniques
+        initialState = Untyped.mkEvalState Untyped.uniques
 
 prompt :: Language -> Repl Text
 prompt language = pure $ prefix language <> " > "
@@ -79,12 +79,12 @@ evalLambda :: String -> Repl ()
 evalLambda input = do
   state' <- get
   
-  let (res, resState) = runState (Lambda.evalString input) state'
+  let (res, resState) = runState (Untyped.evalString input) state'
   put resState
 
   case res of
     Left err -> liftIO . putStrLn . toText . parseError $ err
-    Right res' -> liftIO . putStrLn . Text.toStrict . Lambda.prettyPrint $ res'
+    Right res' -> liftIO . putStrLn . Text.toStrict . Untyped.prettyPrint $ res'
 
 evalSystemF :: String -> Repl ()
 evalSystemF input = case SystemF.evalString M.empty input of

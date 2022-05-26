@@ -1,4 +1,4 @@
-module Language.Lambda.Parser
+module Language.Lambda.Untyped.Parser
   ( parseExpr,
     module Text.Parsec
   ) where
@@ -9,7 +9,7 @@ import Prelude hiding (abs, curry)
 import Text.Parsec
 import Text.Parsec.String
 
-import Language.Lambda.Expression
+import Language.Lambda.Untyped.Expression
 
 parseExpr :: String -> Either ParseError (LambdaExpr String)
 parseExpr = parse (whitespace *> expr <* eof) ""

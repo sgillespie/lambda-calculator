@@ -1,4 +1,4 @@
-module Language.Lambda.Expression
+module Language.Lambda.Untyped.Expression
   ( LambdaExpr(..),
     prettyPrint
   ) where

@@ -1,9 +1,9 @@
-module Language.LambdaSpec where
+module Language.Lambda.UntypedSpec where
 
 import Test.Hspec
 
-import Language.Lambda
-import Language.Lambda.HspecUtils
+import Language.Lambda.Untyped
+import Language.Lambda.Untyped.HspecUtils
 
 spec :: Spec
 spec = do
@@ -28,4 +28,3 @@ spec = do
 
     it "adds index afterwards" $
       take len (drop len uniques) `shouldBe` map (:['0']) alphabet
-

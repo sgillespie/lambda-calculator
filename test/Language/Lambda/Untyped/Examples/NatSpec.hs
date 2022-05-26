@@ -1,8 +1,8 @@
-module Language.Lambda.Examples.NatSpec where
+module Language.Lambda.Untyped.Examples.NatSpec where
 
 import Test.Hspec
 
-import Language.Lambda.HspecUtils
+import Language.Lambda.Untyped.HspecUtils
 
 spec :: Spec
 spec = describe "Nat" $ do

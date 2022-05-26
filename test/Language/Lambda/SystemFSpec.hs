@@ -1,8 +1,8 @@
-module Language.SystemFSpec where
+module Language.Lambda.SystemFSpec where
 
 import Test.Hspec
 
-import Language.SystemF
+import Language.Lambda.SystemF
 
 spec :: Spec
 spec = describe "evalString" $ 

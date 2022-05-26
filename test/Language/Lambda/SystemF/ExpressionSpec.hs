@@ -1,10 +1,10 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Language.SystemF.ExpressionSpec where
+module Language.Lambda.SystemF.ExpressionSpec where
 
 import Test.Hspec
 
 import Language.Lambda.Util.PrettyPrint
-import Language.SystemF.Expression
+import Language.Lambda.SystemF.Expression
 
 spec :: Spec
 spec = describe "prettyPrint" $ do

@@ -1,13 +1,13 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
-module Language.Lambda.EvalSpec where
+module Language.Lambda.Untyped.EvalSpec where
 
 import Data.Map (fromList)
 import RIO
 import Test.Hspec
 import RIO.State
 
-import Language.Lambda
-import Language.Lambda.Eval
+import Language.Lambda.Untyped
+import Language.Lambda.Untyped.Eval
 
 spec :: Spec
 spec = do

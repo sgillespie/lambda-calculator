@@ -1,4 +1,4 @@
-module Language.SystemF.TypeCheckSpec (spec) where
+module Language.Lambda.SystemF.TypeCheckSpec (spec) where
 
 import Data.Either
 import Data.Map
@@ -6,8 +6,8 @@ import Data.Map
 import Test.Hspec
 
 import Language.Lambda.Util.PrettyPrint
-import Language.SystemF.Expression
-import Language.SystemF.TypeCheck
+import Language.Lambda.SystemF.Expression
+import Language.Lambda.SystemF.TypeCheck
 
 tc :: (Ord n, Eq n, PrettyPrint n)
           => UniqueSupply n 

@@ -1,10 +1,10 @@
-module Language.SystemF.TypeCheck where
+module Language.Lambda.SystemF.TypeCheck where
 
 import Data.Map
 import Prelude hiding (lookup)
 
 import Language.Lambda.Util.PrettyPrint
-import Language.SystemF.Expression
+import Language.Lambda.SystemF.Expression
 
 type UniqueSupply n = [n]
 type Context n t = Map n t

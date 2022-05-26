@@ -1,8 +1,8 @@
-module Language.Lambda.Examples.BoolSpec where
+module Language.Lambda.Untyped.Examples.BoolSpec where
 
 import Test.Hspec
 
-import Language.Lambda.HspecUtils
+import Language.Lambda.Untyped.HspecUtils
 
 spec :: Spec
 spec = describe "Bool" $ do

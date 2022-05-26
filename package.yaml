@@ -64,16 +64,16 @@ default-extensions:
 library:
   source-dirs: src
   exposed-modules:
-    - Language.Lambda
-    - Language.Lambda.Expression
-    - Language.Lambda.Eval
-    - Language.Lambda.Parser
-    - Language.Lambda.State
+    - Language.Lambda.Untyped
+    - Language.Lambda.Untyped.Expression
+    - Language.Lambda.Untyped.Eval
+    - Language.Lambda.Untyped.Parser
+    - Language.Lambda.Untyped.State
     - Language.Lambda.Util.PrettyPrint
-    - Language.SystemF
-    - Language.SystemF.Expression
-    - Language.SystemF.Parser
-    - Language.SystemF.TypeCheck
+    - Language.Lambda.SystemF
+    - Language.Lambda.SystemF.Expression
+    - Language.Lambda.SystemF.Parser
+    - Language.Lambda.SystemF.TypeCheck
   default-extensions:
     - NoImplicitPrelude
     - OverloadedStrings

@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
-module Language.Lambda.ExpressionSpec where
+module Language.Lambda.Untyped.ExpressionSpec where
 
-import Language.Lambda.Expression
+import Language.Lambda.Untyped.Expression
 
 import RIO
 import Test.Hspec

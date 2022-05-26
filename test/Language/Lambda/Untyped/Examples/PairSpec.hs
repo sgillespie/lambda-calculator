@@ -1,6 +1,6 @@
-module Language.Lambda.Examples.PairSpec where
+module Language.Lambda.Untyped.Examples.PairSpec where
 
-import Language.Lambda.HspecUtils
+import Language.Lambda.Untyped.HspecUtils
 
 import Test.Hspec
 

@@ -1,11 +1,11 @@
-module Language.Lambda.ParserSpec (spec) where
+module Language.Lambda.Untyped.ParserSpec (spec) where
 
 import Data.Either
 
 import Test.Hspec
 
-import Language.Lambda.Expression
-import Language.Lambda.Parser
+import Language.Lambda.Untyped.Expression
+import Language.Lambda.Untyped.Parser
 
 spec :: Spec
 spec = describe "parseExpr" $ do

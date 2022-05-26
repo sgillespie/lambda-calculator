@@ -1,4 +1,4 @@
-module Language.SystemF (
+module Language.Lambda.SystemF (
   Globals(..),
   PrettyPrint(..),
   SystemFExpr(..),
@@ -12,8 +12,8 @@ import Text.Parsec
 import qualified Data.Map as Map
 
 import Language.Lambda.Util.PrettyPrint
-import Language.SystemF.Expression
-import Language.SystemF.Parser
+import Language.Lambda.SystemF.Expression
+import Language.Lambda.SystemF.Parser
 
 type Globals = Map.Map String (SystemFExpr String String)
 
@@ -21,4 +21,3 @@ evalString :: Globals
            -> String
            -> Either ParseError (SystemFExpr String String, Globals)
 evalString globals = fmap (, globals) . parseExpr
-

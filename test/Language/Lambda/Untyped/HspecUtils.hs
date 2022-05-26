@@ -1,12 +1,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-module Language.Lambda.HspecUtils where
+module Language.Lambda.Untyped.HspecUtils where
 
 import RIO
 import RIO.State (evalState)
 import Test.Hspec
 
-import Language.Lambda
-import Language.Lambda.Parser (ParseError())
+import Language.Lambda.Untyped
+import Language.Lambda.Untyped.Parser (ParseError())
 
 shouldEvalTo :: String -> String -> Expectation
 shouldEvalTo s1 = shouldBe (eval s1) . eval
