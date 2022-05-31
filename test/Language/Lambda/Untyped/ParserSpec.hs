@@ -1,12 +1,12 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 module Language.Lambda.Untyped.ParserSpec (spec) where
 
+import Language.Lambda.Untyped.Expression
+import Language.Lambda.Untyped.Parser
+
 import Data.Either
 import Test.Hspec
 import RIO
-
-import Language.Lambda.Untyped.Expression
-import Language.Lambda.Untyped.Parser
 
 spec :: Spec
 spec = describe "parseExpr" $ do

@@ -22,7 +22,7 @@ type EvalT name m
   = StateT (Untyped.EvalState name)
       (ExceptT LambdaException m)
 
-type Repl a = HaskelineT (EvalT String IO) a
+type Repl a = HaskelineT (EvalT Text IO) a
 
 runRepl :: Language -> IO ()
 runRepl language
@@ -46,7 +46,7 @@ prompt language = pure $ prefix language <> " > "
         prefix SystemF = singleton upperLambda
 
 evalInput :: Language -> String -> Repl ()
-evalInput Untyped input = evalLambda input
+evalInput Untyped input = evalLambda (pack input)
 evalInput SystemF input = evalSystemF input
 
 commands :: [(String, String -> Repl ())]
@@ -68,11 +68,11 @@ initializer = liftIO $ putStrLn greeting
           <> version'
           <> ")\nType :h for help\n"
 
-evalLambda :: String -> Repl ()
+evalLambda :: Text -> Repl ()
 evalLambda input = do
   state' <- get
   
-  let res = runEval (Untyped.evalString input) state'
+  let res = runEval (Untyped.evalText input) state'
   case res of
     Left err -> liftIO . putStrLn . textDisplay $ err
     Right (res', newState) -> do

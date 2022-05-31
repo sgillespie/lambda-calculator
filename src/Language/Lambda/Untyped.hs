@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Language.Lambda.Untyped (
-  evalString,
-  runEvalString,
-  execEvalString,
-  unsafeExecEvalString,
+  evalText,
+  runEvalText,
+  execEvalText,
+  unsafeExecEvalText,
   defaultUniques,
 
   module Language.Lambda.Untyped.Expression,
@@ -15,7 +15,7 @@ module Language.Lambda.Untyped (
 import Control.Monad.Except
 import Data.Either
 import RIO
-import RIO.Text (pack)
+import qualified RIO.Text as Text
 
 import Language.Lambda.Shared.Errors
 import Language.Lambda.Untyped.Eval
@@ -23,32 +23,34 @@ import Language.Lambda.Untyped.Expression
 import Language.Lambda.Untyped.Parser
 import Language.Lambda.Untyped.State
 
-evalString :: String -> Eval String (LambdaExpr String)
-evalString = either throwParseError evalExpr . parseExpr
-  where throwParseError = throwError . ParseError . pack . show
+evalText :: Text -> Eval Text (LambdaExpr Text)
+evalText = either throwParseError evalExpr' . parseExpr
+  where throwParseError = throwError . ParseError . Text.pack . show
+        evalExpr' = evalExpr
 
-runEvalString
-  :: String
-  -> Globals String
-  -> Either LambdaException (LambdaExpr String, EvalState String)
-runEvalString input globals' = runEval (evalString input) (mkState globals')
+runEvalText
+  :: Text
+  -> Globals Text
+  -> Either LambdaException (LambdaExpr Text, EvalState Text)
+runEvalText input globals' = runEval (evalText input) (mkState globals')
 
-execEvalString
-  :: String
-  -> Globals String
-  -> Either LambdaException (LambdaExpr String)
-execEvalString input globals' = execEval (evalString input) (mkState globals')
+execEvalText
+  :: Text
+  -> Globals Text
+  -> Either LambdaException (LambdaExpr Text)
+execEvalText input globals' = execEval (evalText input) (mkState globals')
 
-unsafeExecEvalString
-  :: String
-  -> Globals String
-  -> LambdaExpr String
-unsafeExecEvalString input globals'
-  = unsafeExecEval (evalString input) (mkState globals')
+unsafeExecEvalText
+  :: Text
+  -> Globals Text
+  -> LambdaExpr Text
+unsafeExecEvalText input globals'
+  = unsafeExecEval (evalText input) (mkState globals')
 
-defaultUniques :: [String]
-defaultUniques = concatMap (\p -> map (:p) . reverse $ ['a'..'z']) suffix
-  where suffix = "" : map show [(0::Int)..]
+defaultUniques :: [Text]
+defaultUniques = map Text.pack strings
+  where strings = concatMap (\p -> map (:p) . reverse $ ['a'..'z']) suffix
+        suffix = "" : map show [(0::Int)..]
 
-mkState :: Globals String -> EvalState String
+mkState :: Globals Text -> EvalState Text
 mkState = flip EvalState defaultUniques

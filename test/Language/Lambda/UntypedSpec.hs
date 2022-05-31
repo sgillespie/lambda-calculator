@@ -1,6 +1,9 @@
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 module Language.Lambda.UntypedSpec where
 
+import RIO
 import qualified RIO.Map as Map
+import qualified RIO.Text as Text
 import Test.Hspec
 
 import Language.Lambda.Untyped
@@ -8,8 +11,8 @@ import Language.Lambda.Untyped.HspecUtils
 
 spec :: Spec
 spec = do
-  describe "evalString" $ do
-    it "evaluates simple strings" $ do
+  describe "evalText" $ do
+    it "evaluates simple text" $ do
       eval "x" `shouldBe` Right (Var "x")
       eval "\\x. x" `shouldBe` Right (Abs "x" (Var "x"))
       eval "f y" `shouldBe` Right (App (Var "f") (Var "y"))
@@ -20,54 +23,55 @@ spec = do
     it "reduces applications with nested redexes" $
       eval "(\\f x. f x) (\\y. y)" `shouldBe` Right (Abs "x" (Var "x"))
 
-  describe "runEvalString" $ do
-    let runEvalString' input = fst <$> runEvalString input Map.empty
+  describe "runEvalText" $ do
+    let runEvalText' input = fst <$> runEvalText input Map.empty
     
     it "evaluates simple strings" $ do
-      runEvalString' "x" `shouldBe` Right (Var "x")
-      runEvalString' "\\x. x" `shouldBe` Right (Abs "x" (Var "x"))
-      runEvalString' "f y" `shouldBe` Right (App (Var "f") (Var "y"))
+      runEvalText' "x" `shouldBe` Right (Var "x")
+      runEvalText' "\\x. x" `shouldBe` Right (Abs "x" (Var "x"))
+      runEvalText' "f y" `shouldBe` Right (App (Var "f") (Var "y"))
 
     it "reduces simple applications" $
-      runEvalString' "(\\x .x) y" `shouldBe` Right (Var "y")
+      runEvalText' "(\\x .x) y" `shouldBe` Right (Var "y")
 
     it "reduces applications with nested redexes" $
-      runEvalString' "(\\f x. f x) (\\y. y)" `shouldBe` Right (Abs "x" (Var "x"))
+      runEvalText' "(\\f x. f x) (\\y. y)" `shouldBe` Right (Abs "x" (Var "x"))
 
-  describe "execEvalString" $ do
-    let execEvalString' input = execEvalString input Map.empty
+  describe "execEvalText" $ do
+    let execEvalText' input = execEvalText input Map.empty
     
-    it "evaluates simple strings" $ do
-      execEvalString' "x" `shouldBe` Right (Var "x")
-      execEvalString' "\\x. x" `shouldBe` Right (Abs "x" (Var "x"))
-      execEvalString' "f y" `shouldBe` Right (App (Var "f") (Var "y"))
+    it "evaluates simple texts" $ do
+      execEvalText' "x" `shouldBe` Right (Var "x")
+      execEvalText' "\\x. x" `shouldBe` Right (Abs "x" (Var "x"))
+      execEvalText' "f y" `shouldBe` Right (App (Var "f") (Var "y"))
 
     it "reduces simple applications" $
-      execEvalString' "(\\x .x) y" `shouldBe` Right (Var "y")
+      execEvalText' "(\\x .x) y" `shouldBe` Right (Var "y")
 
     it "reduces applications with nested redexes" $
-      execEvalString' "(\\f x. f x) (\\y. y)" `shouldBe` Right (Abs "x" (Var "x"))
+      execEvalText' "(\\f x. f x) (\\y. y)" `shouldBe` Right (Abs "x" (Var "x"))
 
-  describe "unsafeExecEvalString" $ do
-    let unsafeExecEvalString' input = unsafeExecEvalString input Map.empty
+  describe "unsafeExecEvalText" $ do
+    let unsafeExecEvalText' input = unsafeExecEvalText input Map.empty
     
-    it "evaluates simple strings" $ do
-      unsafeExecEvalString' "x" `shouldBe` Var "x"
-      unsafeExecEvalString' "\\x. x" `shouldBe` Abs "x" (Var "x")
-      unsafeExecEvalString' "f y" `shouldBe` App (Var "f") (Var "y")
+    it "evaluates simple texts" $ do
+      unsafeExecEvalText' "x" `shouldBe` Var "x"
+      unsafeExecEvalText' "\\x. x" `shouldBe` Abs "x" (Var "x")
+      unsafeExecEvalText' "f y" `shouldBe` App (Var "f") (Var "y")
 
     it "reduces simple applications" $
-      unsafeExecEvalString' "(\\x .x) y" `shouldBe` Var "y"
+      unsafeExecEvalText' "(\\x .x) y" `shouldBe` Var "y"
 
     it "reduces applications with nested redexes" $
-      unsafeExecEvalString' "(\\f x. f x) (\\y. y)" `shouldBe` Abs "x" (Var "x")
+      unsafeExecEvalText' "(\\f x. f x) (\\y. y)" `shouldBe` Abs "x" (Var "x")
 
   describe "defaultUniques" $ do
     let alphabet = reverse ['a'..'z']
         len = length alphabet
     
     it "starts with plain alphabet" $
-      take len defaultUniques `shouldBe` map (:[]) alphabet
+      take len defaultUniques `shouldBe` map (`Text.cons` Text.empty) alphabet
 
     it "adds index afterwards" $
-      take len (drop len defaultUniques) `shouldBe` map (:['0']) alphabet
+      take len (drop len defaultUniques)
+        `shouldBe` map (`Text.cons` Text.singleton '0') alphabet

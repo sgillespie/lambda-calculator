@@ -4,38 +4,39 @@ module Language.Lambda.Untyped.Parser
   ) where
 
 import Control.Monad
-import Prelude hiding (abs, curry)
+import RIO hiding ((<|>), abs, curry, many, try)
+import qualified RIO.Text as Text
 
 import Text.Parsec
-import Text.Parsec.String
+import Text.Parsec.Text
 
 import Language.Lambda.Untyped.Expression
 
-parseExpr :: String -> Either ParseError (LambdaExpr String)
+parseExpr :: Text -> Either ParseError (LambdaExpr Text)
 parseExpr = parse (whitespace *> expr <* eof) ""
 
-expr :: Parser (LambdaExpr String)
+expr :: Parser (LambdaExpr Text)
 expr = try app <|> term
 
-term :: Parser (LambdaExpr String)
+term :: Parser (LambdaExpr Text)
 term = let' <|> abs <|> var <|> parens
 
-var :: Parser (LambdaExpr String)
+var :: Parser (LambdaExpr Text)
 var = Var <$> identifier
 
-abs :: Parser (LambdaExpr String)
+abs :: Parser (LambdaExpr Text)
 abs = curry <$> idents <*> expr
   where idents = symbol '\\' *> many1 identifier <* symbol '.'
         curry = flip (foldr Abs)
 
-app :: Parser (LambdaExpr String)
+app :: Parser (LambdaExpr Text)
 app = chainl1 term (return App)
 
-let' :: Parser (LambdaExpr String)
+let' :: Parser (LambdaExpr Text)
 let' = Let <$> ident <*> expr
   where ident = keyword "let" *> identifier <* symbol '='
 
-parens :: Parser (LambdaExpr String)
+parens :: Parser (LambdaExpr Text)
 parens = symbol '(' *> expr <* symbol ')'
 
 lexeme :: Parser a -> Parser a
@@ -44,13 +45,13 @@ lexeme p =  p <* whitespace
 whitespace :: Parser ()
 whitespace = void . many . oneOf $ " \t"
 
-identifier :: Parser String
-identifier = lexeme ((:) <$> first <*> many rest)
-  where first = letter <|> char '_'
-        rest  = first <|> digit
+identifier :: Parser Text
+identifier = lexeme $ Text.cons <$> first' <*> (Text.pack <$> many rest)
+  where first' = letter <|> char '_'
+        rest  = first' <|> digit
 
 symbol :: Char -> Parser ()
 symbol = void . lexeme . char
 
-keyword :: String -> Parser ()
-keyword = void . lexeme . string
+keyword :: Text -> Parser ()
+keyword = void . lexeme . string . Text.unpack
