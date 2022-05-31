@@ -19,12 +19,12 @@ spec = do
     it "reduces applications with nested redexes" $
       eval "(\\f x. f x) (\\y. y)" `shouldBe` Right (Abs "x" (Var "x"))
 
-  describe "uniques" $ do
+  describe "defaultUniques" $ do
     let alphabet = reverse ['a'..'z']
         len = length alphabet
     
     it "starts with plain alphabet" $
-      take len uniques `shouldBe` map (:[]) alphabet
+      take len defaultUniques `shouldBe` map (:[]) alphabet
 
     it "adds index afterwards" $
-      take len (drop len uniques) `shouldBe` map (:['0']) alphabet
+      take len (drop len defaultUniques) `shouldBe` map (:['0']) alphabet

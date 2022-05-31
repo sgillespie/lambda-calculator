@@ -5,11 +5,10 @@ import Language.Lambda.Untyped.Expression
 
 import RIO
 import Test.Hspec
-import qualified RIO.Text.Lazy as Text
 
 spec :: Spec
 spec = describe "prettyPrint" $ do
-    let prettyPrint' :: LambdaExpr Text.Text -> Text.Text
+    let prettyPrint' :: LambdaExpr Text -> Text
         prettyPrint' = prettyPrint
   
     it "prints simple variables" $

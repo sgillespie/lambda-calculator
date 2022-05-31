@@ -8,39 +8,46 @@ module Language.Lambda.Untyped.Eval
     freeVarsOf
   ) where
 
+import Control.Monad.Except
+import Prettyprinter
 import RIO
 import RIO.List (find)
 import qualified RIO.Map as Map
 
+import Language.Lambda.Shared.Errors
 import Language.Lambda.Untyped.Expression
 import Language.Lambda.Untyped.State
 
 -- | Evaluate an expression
-evalExpr :: Ord name => LambdaExpr name -> Eval name (LambdaExpr name)
+evalExpr :: (Pretty name, Ord name) => LambdaExpr name -> Eval name (LambdaExpr name)
 evalExpr (Let name expr) = do
   globals' <- getGlobals
-  expr' <- evalExpr' $ subGlobals globals' expr
+  result <- evalExpr' $ subGlobals globals' expr
 
-  setGlobals $ Map.insert name expr' globals'
+  setGlobals $ Map.insert name result globals'
 
-  return $ Let name expr'
+  return $ Let name result
 
 evalExpr expr = do
   globals' <- getGlobals
   evalExpr' $ subGlobals globals' expr
 
 -- | Evaluate an expression; does not support `let`
-evalExpr' :: Eq name => LambdaExpr name -> Eval name (LambdaExpr name)
+evalExpr' :: (Eq name, Pretty name) => LambdaExpr name -> Eval name (LambdaExpr name)
 evalExpr' expr@(Var _) = return expr
 evalExpr' (Abs name expr) = Abs name <$> evalExpr' expr
-evalExpr' (Let name expr) = Let name <$> evalExpr' expr
 evalExpr' (App e1 e2) = do
   e1' <- evalExpr' e1
   e2' <- evalExpr' e2
   betaReduce e1' e2'
+evalExpr' expr@(Let _ _) = throwError . InvalidLet . prettyPrint $ expr
 
 -- | Look up free vars that have global bindings and substitute them
-subGlobals :: Ord name => Map name (LambdaExpr name) -> LambdaExpr name -> LambdaExpr name
+subGlobals
+  :: Ord name
+  => Map name (LambdaExpr name)
+  -> LambdaExpr name
+  -> LambdaExpr name
 subGlobals globals' expr@(Var x) = Map.findWithDefault expr x globals'
 subGlobals globals' (App e1 e2) = App (subGlobals globals' e1) (subGlobals globals' e2)
 subGlobals globals' (Abs name expr) = Abs name expr'
@@ -50,7 +57,11 @@ subGlobals globals' (Abs name expr) = Abs name expr'
 subGlobals _ expr = expr
 
 -- | Function application
-betaReduce :: Eq name => LambdaExpr name -> LambdaExpr name -> Eval name (LambdaExpr name)
+betaReduce
+  :: (Eq name, Pretty name)
+  => LambdaExpr name
+  -> LambdaExpr name
+  -> Eval name (LambdaExpr name)
 betaReduce expr@(Var _) e2 = return $ App expr e2
 betaReduce (App e1 e1') e2 = do
   reduced <- betaReduce e1 e1'
@@ -58,7 +69,7 @@ betaReduce (App e1 e1') e2 = do
 betaReduce (Abs n e1) e2 = do
   e1' <- alphaConvert (freeVarsOf e2) e1
   evalExpr' $ substitute e1' n e2
-betaReduce e1 e2 = return $ App e1 e2
+betaReduce _ _ = throwError ImpossibleError
 
 -- | Rename abstraction parameters to avoid name captures
 alphaConvert :: Eq name => [name] -> LambdaExpr name -> Eval name (LambdaExpr name)
@@ -84,7 +95,6 @@ etaConvert (Abs n e@(Abs _ _))
   where e' = etaConvert e
 etaConvert (Abs n expr) = Abs n (etaConvert expr)
 etaConvert (App e1 e2)  = App (etaConvert e1) (etaConvert e2)
-etaConvert expr@(Var _) = expr
 etaConvert expr = expr
 
 -- | Substitute an expression for a variable name in another expression

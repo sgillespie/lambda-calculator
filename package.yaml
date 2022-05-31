@@ -11,6 +11,8 @@ github: sgillespie/lambda-calculus
 
 dependencies:
   - base >= 4.9 && < 5
+  - mtl
+  - prettyprinter
   - rio
 
 ghc-options:
@@ -64,6 +66,7 @@ default-extensions:
 library:
   source-dirs: src
   exposed-modules:
+    - Language.Lambda.Shared.Errors
     - Language.Lambda.Untyped
     - Language.Lambda.Untyped.Expression
     - Language.Lambda.Untyped.Eval
@@ -80,7 +83,6 @@ library:
   dependencies:
     - containers
     - parsec
-    - prettyprinter
   
 executables:
   lambda-calculator:
@@ -110,7 +112,6 @@ tests:
       - containers
       - hspec
       - lambda-calculator
-      - prettyprinter
       
   lambda-calculus-lint:
     main: HLint.hs

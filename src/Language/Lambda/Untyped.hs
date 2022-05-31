@@ -1,33 +1,29 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Language.Lambda.Untyped (
-  EvalState(..),
   evalString,
-  mkEvalState,  
-  parseExpr,
-  uniques,
+  defaultUniques,
 
-  module Language.Lambda.Untyped.Expression
+  module Language.Lambda.Untyped.Expression,
+  module Language.Lambda.Untyped.Eval,
+  module Language.Lambda.Untyped.Parser,
+  module Language.Lambda.Untyped.State
   ) where
 
-import Control.Monad
-import Prelude
-import Text.Parsec
+import Control.Monad.Except
+import Data.Either
+import RIO
+import RIO.Text (pack)
 
+import Language.Lambda.Shared.Errors
 import Language.Lambda.Untyped.Eval
 import Language.Lambda.Untyped.Expression
 import Language.Lambda.Untyped.Parser
-import Language.Lambda.Untyped.State (Eval(), mkEvalState)
+import Language.Lambda.Untyped.State
 
-evalString :: String -> Eval String (Either ParseError (LambdaExpr String))
-evalString str = do
-  let expr = parseExpr str
+evalString :: String -> Eval String (LambdaExpr String)
+evalString = either throwParseError evalExpr . parseExpr
+  where throwParseError = throwError . ParseError . pack . show
 
-  case expr of
-    Left err -> return $ Left err
-    Right expr' -> do
-      res <- evalExpr expr'
-      return $ Right res
-
-uniques :: [String]
-uniques = concatMap (\p -> map (:p) . reverse $ ['a'..'z']) suffix
+defaultUniques :: [String]
+defaultUniques = concatMap (\p -> map (:p) . reverse $ ['a'..'z']) suffix
   where suffix = "" : map show [(0::Int)..]

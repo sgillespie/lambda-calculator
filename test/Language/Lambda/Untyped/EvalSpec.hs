@@ -4,48 +4,54 @@ module Language.Lambda.Untyped.EvalSpec where
 import Data.Map (fromList)
 import RIO
 import Test.Hspec
-import RIO.State
 
+import Language.Lambda.Shared.Errors
 import Language.Lambda.Untyped
 import Language.Lambda.Untyped.Eval
+import Language.Lambda.Untyped.State
 
 spec :: Spec
 spec = do
   describe "evalExpr" $ do
-    let evalExpr' expr = evalState (evalExpr expr) (mkEvalState uniques)
+    let evalExpr' expr = execEval (evalExpr expr) (mkEvalState defaultUniques)
 
     it "beta reduces" $ do
       let expr = App (Abs "x" (Var "x")) (Var "z")
-      evalExpr' expr `shouldBe` Var "z"
+      evalExpr' expr `shouldBe` Right (Var "z")
 
     it "reduces multiple applications" $ do
       let expr = App (App (Abs "f" (Abs "x" (App (Var "f") (Var "x")))) (Var "g")) (Var "y")
-      evalExpr' expr `shouldBe` App (Var "g") (Var "y")
+      evalExpr' expr `shouldBe` Right (App (Var "g") (Var "y"))
 
     it "reduces inner redexes" $ do
       let expr = Abs "x" (App (Abs "y" (Var "y")) (Var "x"))
-      evalExpr' expr `shouldBe` Abs "x" (Var "x")
+      evalExpr' expr `shouldBe` Right (Abs "x" (Var "x"))
 
     it "reduces with name captures" $ do
       let expr = App (Abs "f" (Abs "x" (App (Var "f") (Var "x"))))
                      (Abs "f" (Var "x"))
-      evalExpr' expr `shouldBe` Abs "z" (Var "x")
+      evalExpr' expr `shouldBe` Right (Abs "z" (Var "x"))
 
     it "reduces let bodies" $ do
       let expr = Let "x" $ App (Abs "y" (Var "y")) (Var "z")
-      evalExpr' expr `shouldBe` Let "x" (Var "z")
+      evalExpr' expr `shouldBe` Right (Let "x" (Var "z"))
 
     it "let expressions update state" $ do
-      let res = flip evalState (mkEvalState uniques) $ do
+      let res = flip unsafeExecEval (mkEvalState defaultUniques) $ do
             _ <- evalExpr $ Let "w" (Var "x")
             evalExpr $ Var "w"
 
       res `shouldBe` Var "x"
 
+    it "nested let expressions fail" $ do
+      let res = flip unsafeExecEval (mkEvalState defaultUniques) $ do
+            evalExpr $ Let "x" (Let "y" (Var "z"))
+      evaluate res `shouldThrow` isLetError
+
   describe "subGlobals" $ do
-    let globals :: Map Text (LambdaExpr Text)
-        globals = fromList [("w", Var "x")] 
-        subGlobals' = subGlobals globals
+    let globals' :: Map String (LambdaExpr String)
+        globals' = fromList [("w", Var "x")] 
+        subGlobals' = subGlobals globals'
     
     it "subs simple variables" $
       subGlobals' (Var "w") `shouldBe` Var "x"
@@ -60,7 +66,7 @@ spec = do
 
   describe "betaReduce" $ do
     let betaReduce' :: LambdaExpr Text -> LambdaExpr Text -> LambdaExpr Text
-        betaReduce' e1 e2 = evalState (betaReduce e1 e2) (mkEvalState [])
+        betaReduce' e1 e2 = unsafeExecEval (betaReduce e1 e2) (mkEvalState [])
     
     it "reduces simple applications" $ do
       let e1 = Abs "x" (Var "x")
@@ -95,7 +101,7 @@ spec = do
   describe "alphaConvert" $ do
     let alphaConvert' :: [Text] -> [Text] -> LambdaExpr Text -> LambdaExpr Text
         alphaConvert' uniques' fvs expr
-          = evalState (alphaConvert fvs expr) (mkEvalState uniques')
+          = unsafeExecEval (alphaConvert fvs expr) (mkEvalState uniques')
     
     it "alpha converts simple expressions" $ do
       let freeVars = ["x"] :: [Text]

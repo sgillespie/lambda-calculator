@@ -5,8 +5,7 @@ module Language.Lambda.Untyped.Expression
 
 import RIO
 import Prettyprinter
-import Prettyprinter.Render.Text (renderLazy)
-import qualified RIO.Text.Lazy as Text
+import Prettyprinter.Render.Text (renderStrict)
 
 data LambdaExpr name
   = Var name                                -- ^ Variables
@@ -21,8 +20,8 @@ instance Pretty name => Pretty (LambdaExpr name) where
   pretty (App e1 e2) = prettyApp e1 e2
   pretty (Let name body) = prettyLet name body
 
-prettyPrint :: Pretty name => LambdaExpr name -> Text.Text
-prettyPrint expr = renderLazy docStream
+prettyPrint :: Pretty name => LambdaExpr name -> Text
+prettyPrint expr = renderStrict docStream
   where docStream = layoutPretty defaultLayoutOptions (pretty expr)
 
 prettyAbs :: Pretty name => name -> LambdaExpr name -> Doc a

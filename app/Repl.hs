@@ -3,6 +3,8 @@ module Repl (runRepl) where
 import CliOptions (Language(..))
 import Language.Lambda.Util.PrettyPrint
 import Paths_lambda_calculator (version)
+import Language.Lambda.Untyped.State
+import Language.Lambda.Shared.Errors (LambdaException())
 import qualified Language.Lambda.Untyped as Untyped
 import qualified Language.Lambda.SystemF as SystemF
 
@@ -11,29 +13,20 @@ import Data.Text.IO (putStrLn)
 import Data.Version (showVersion)
 import RIO
 import RIO.State
-import RIO.Text (unpack)
+import RIO.Text (pack, unpack)
 import System.Console.Repline
 import qualified Data.Map as M
-import qualified RIO.Text.Lazy as Text
+import Control.Monad.Except
 
-type Repl a = HaskelineT (StateT (Untyped.EvalState String) IO) a
+type EvalT name m
+  = StateT (Untyped.EvalState name)
+      (ExceptT LambdaException m)
 
-newtype AppException
-  = ParseError Text
-
-instance Exception AppException
-
-instance Show AppException where
-  show = show . toText
-
-toText :: AppException -> Text
-toText (ParseError err) = "parse error: " <> err
-
-parseError :: Show show => show -> AppException
-parseError = ParseError . fromString . show
+type Repl a = HaskelineT (EvalT String IO) a
 
 runRepl :: Language -> IO ()
-runRepl language = evalStateT (evalReplOpts replOpts) initialState
+runRepl language
+  = void . runExceptT . evalStateT (evalReplOpts replOpts) $ initialState
   where replOpts = ReplOpts
           { banner = const $ unpack <$> prompt language,
             command = evalInput language,
@@ -45,7 +38,7 @@ runRepl language = evalStateT (evalReplOpts replOpts) initialState
             finaliser = return Exit
           }
 
-        initialState = Untyped.mkEvalState Untyped.uniques
+        initialState = Untyped.mkEvalState Untyped.defaultUniques
 
 prompt :: Language -> Repl Text
 prompt language = pure $ prefix language <> " > "
@@ -79,16 +72,16 @@ evalLambda :: String -> Repl ()
 evalLambda input = do
   state' <- get
   
-  let (res, resState) = runState (Untyped.evalString input) state'
-  put resState
-
+  let res = runEval (Untyped.evalString input) state'
   case res of
-    Left err -> liftIO . putStrLn . toText . parseError $ err
-    Right res' -> liftIO . putStrLn . Text.toStrict . Untyped.prettyPrint $ res'
+    Left err -> liftIO . putStrLn . textDisplay $ err
+    Right (res', newState) -> do
+      put newState
+      liftIO . putStrLn . Untyped.prettyPrint $ res'
 
 evalSystemF :: String -> Repl ()
 evalSystemF input = case SystemF.evalString M.empty input of
-  Left err -> liftIO . putStrLn . toText . parseError $ err
+  Left err -> liftIO . putStrLn . pack . show $ err
   Right (res, _) -> liftIO . putStrLn . fromString . prettyPrint $ res
 
 helpCommand :: Repl ()

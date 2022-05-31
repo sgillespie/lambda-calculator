@@ -2,6 +2,10 @@ module Language.Lambda.Untyped.State
   ( EvalState(..),
     Eval(),
     Globals(),
+    runEval,
+    execEval,
+    unsafeExecEval,
+    unsafeRunEval,
     globals,
     uniques,
     mkEvalState,
@@ -11,8 +15,10 @@ module Language.Lambda.Untyped.State
     setUniques
   ) where
 
+import Language.Lambda.Shared.Errors
 import Language.Lambda.Untyped.Expression 
 
+import Control.Monad.Except
 import RIO
 import RIO.State
 import qualified RIO.Map as Map
@@ -24,10 +30,34 @@ data EvalState name = EvalState
   }
 
 -- | A stateful computation
-type Eval name = State (EvalState name)
+type Eval name
+  = StateT (EvalState name)
+      (Except LambdaException)
 
 -- | A mapping of global variables to expressions
 type Globals name = Map name (LambdaExpr name)
+
+-- | Run an evalualation
+runEval :: Eval name result -> EvalState name -> Either LambdaException (result, EvalState name)
+runEval computation = runExcept . runStateT computation
+
+-- | Run an evalualation, throwing away the final state
+execEval :: Eval name result -> EvalState name -> Either LambdaException result
+execEval computation = runExcept . evalStateT computation
+
+-- | Run an evaluation. If the result is an error, throws it
+unsafeRunEval :: Eval name result -> EvalState name -> (result, EvalState name)
+unsafeRunEval computation state'
+  = case runEval computation state' of
+      Left err -> error $ show err
+      Right res -> res
+  
+-- | Run an evaluation, throwing away the final state. If the result is an error, throws it
+unsafeExecEval:: Eval name result -> EvalState name -> result
+unsafeExecEval computation state'
+  = case execEval computation state' of
+      Left err -> impureThrow err
+      Right res -> res
 
 -- | Create an EvalState
 mkEvalState :: [name] -> EvalState name

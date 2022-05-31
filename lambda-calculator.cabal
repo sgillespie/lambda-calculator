@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 17d6f0768ed1aa00b8532e04e7e20c763b4d40206a6e1f527ffda4f8307a0b49
+-- hash: 8e2e9425b4a54d46f459305956713f82d119c9dadc843fce680da7f5393cffd8
 
 name:           lambda-calculator
 version:        2.0.0
@@ -26,6 +26,7 @@ source-repository head
 
 library
   exposed-modules:
+      Language.Lambda.Shared.Errors
       Language.Lambda.Untyped
       Language.Lambda.Untyped.Expression
       Language.Lambda.Untyped.Eval
@@ -37,6 +38,7 @@ library
       Language.Lambda.SystemF.Parser
       Language.Lambda.SystemF.TypeCheck
   other-modules:
+      Language.Lambda
       Paths_lambda_calculator
   hs-source-dirs:
       src
@@ -81,6 +83,7 @@ library
   build-depends:
       base >=4.9 && <5
     , containers
+    , mtl
     , parsec
     , prettyprinter
     , rio
@@ -137,7 +140,9 @@ executable lambda-calculator
     , bytestring
     , containers
     , lambda-calculator
+    , mtl
     , optparse-applicative
+    , prettyprinter
     , repline
     , rio
     , text
@@ -188,6 +193,8 @@ test-suite lambda-calculus-lint
   build-depends:
       base >=4.9 && <5
     , hlint
+    , mtl
+    , prettyprinter
     , rio
   default-language: Haskell2010
 
@@ -253,6 +260,7 @@ test-suite lambda-calculus-test
     , containers
     , hspec
     , lambda-calculator
+    , mtl
     , prettyprinter
     , rio
   default-language: Haskell2010
