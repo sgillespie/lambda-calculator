@@ -1,5 +1,7 @@
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 module Language.Lambda.Untyped.Examples.NatSpec where
 
+import RIO
 import Test.Hspec
 
 import Language.Lambda.Untyped.HspecUtils

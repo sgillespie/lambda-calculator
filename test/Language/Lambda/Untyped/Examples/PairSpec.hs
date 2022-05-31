@@ -1,7 +1,9 @@
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 module Language.Lambda.Untyped.Examples.PairSpec where
 
 import Language.Lambda.Untyped.HspecUtils
 
+import RIO
 import Test.Hspec
 
 spec :: Spec

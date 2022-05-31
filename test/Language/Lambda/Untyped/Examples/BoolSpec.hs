@@ -1,5 +1,7 @@
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 module Language.Lambda.Untyped.Examples.BoolSpec where
 
+import RIO
 import Test.Hspec
 
 import Language.Lambda.Untyped.HspecUtils
