@@ -1,5 +1,6 @@
 module Language.Lambda.Untyped.Expression
   ( LambdaExpr(..),
+    lambda,
     prettyPrint
   ) where
 
@@ -24,6 +25,9 @@ prettyPrint :: Pretty name => LambdaExpr name -> Text
 prettyPrint expr = renderStrict docStream
   where docStream = layoutPretty defaultLayoutOptions (pretty expr)
 
+lambda :: Char
+lambda = 'λ'
+
 prettyAbs :: Pretty name => name -> LambdaExpr name -> Doc a
 prettyAbs name body
   = lambda' <> hsep (map pretty names) <> dot
@@ -45,7 +49,7 @@ prettyLet name body
     <+> pretty body
 
 lambda' :: Doc ann
-lambda' = pretty 'λ'
+lambda' = pretty lambda
 
 uncurryAbs :: n -> LambdaExpr n -> ([n], LambdaExpr n)
 uncurryAbs n = uncurry' [n]

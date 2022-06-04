@@ -1,7 +1,6 @@
 module Repl (runRepl) where
 
 import CliOptions (Language(..))
-import Language.Lambda.Util.PrettyPrint
 import Paths_lambda_calculator (version)
 import Language.Lambda.Untyped.State
 import Language.Lambda.Shared.Errors (LambdaException())
@@ -29,7 +28,7 @@ runRepl language
   = void . runExceptT . evalStateT (evalReplOpts replOpts) $ initialState
   where replOpts = ReplOpts
           { banner = const $ unpack <$> prompt language,
-            command = evalInput language,
+            command = flip evalInput language,
             options = commands,
             prefix = Just ':',
             multilineCommand = Nothing,
@@ -42,12 +41,15 @@ runRepl language
 
 prompt :: Language -> Repl Text
 prompt language = pure $ prefix language <> " > "
-  where prefix Untyped = singleton lambda
-        prefix SystemF = singleton upperLambda
+  where prefix Untyped = singleton Untyped.lambda
+        prefix SystemF = singleton SystemF.upperLambda
 
-evalInput :: Language -> String -> Repl ()
-evalInput Untyped input = evalLambda (pack input)
-evalInput SystemF input = evalSystemF input
+evalInput :: String -> Language -> Repl ()
+evalInput input = \case
+  Untyped -> evalLambda input'
+  SystemF -> evalSystemF input'
+
+  where input' = pack input
 
 commands :: [(String, String -> Repl ())]
 commands
@@ -79,10 +81,10 @@ evalLambda input = do
       put newState
       liftIO . putStrLn . Untyped.prettyPrint $ res'
 
-evalSystemF :: String -> Repl ()
-evalSystemF input = case SystemF.evalString M.empty input of
+evalSystemF :: Text -> Repl ()
+evalSystemF input = case SystemF.evalText M.empty input of
   Left err -> liftIO . putStrLn . pack . show $ err
-  Right (res, _) -> liftIO . putStrLn . fromString . prettyPrint $ res
+  Right (res, _) -> liftIO . putStrLn . SystemF.prettyPrint $ res
 
 helpCommand :: Repl ()
 helpCommand = liftIO $ putStrLn banner

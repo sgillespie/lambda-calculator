@@ -1,15 +1,15 @@
 module Language.Lambda.SystemF.TypeCheck where
 
 import Data.Map
+import Prettyprinter
 import Prelude hiding (lookup)
 
-import Language.Lambda.Util.PrettyPrint
 import Language.Lambda.SystemF.Expression
 
 type UniqueSupply n = [n]
 type Context n t = Map n t
 
-typecheck :: (Ord n, Eq n, PrettyPrint n)
+typecheck :: (Ord n, Eq n, Pretty n)
           => UniqueSupply n 
           -> Context n (Ty n)
           -> SystemFExpr n n 
@@ -20,14 +20,14 @@ typecheck uniqs ctx (App e1 e2)    = tcApp uniqs ctx e1 e2
 typecheck uniqs ctx (TyAbs t body) = tcTyAbs uniqs ctx t body
 typecheck uniqs ctx (TyApp e ty)   = tcTyApp uniqs ctx e ty
 
-tcVar :: (Ord n, Eq n, PrettyPrint n)
+tcVar :: (Ord n, Eq n, Pretty n)
       => UniqueSupply n
       -> Context n (Ty n)
       -> n
       -> Either String (Ty n)
 tcVar uniqs ctx var = maybe (TyVar <$> unique uniqs) return (lookup var ctx)
 
-tcAbs :: (Ord n, Eq n, PrettyPrint n)
+tcAbs :: (Ord n, Eq n, Pretty n)
       => UniqueSupply n
       -> Context n (Ty n)
       -> n
@@ -37,7 +37,7 @@ tcAbs :: (Ord n, Eq n, PrettyPrint n)
 tcAbs uniqs ctx name ty body = TyArrow ty <$> typecheck uniqs ctx' body
   where ctx' = insert name ty ctx
 
-tcApp :: (Ord n, Eq n, PrettyPrint n)
+tcApp :: (Ord n, Eq n, Pretty n)
       => UniqueSupply n
       -> Context n (Ty n)
       -> SystemFExpr n n
@@ -58,7 +58,7 @@ tcApp uniqs ctx e1 e2 = do
         arrow (TyArrow t1 t2) = return (t1, t2)
         arrow t               = Left t
 
-tcTyAbs :: (Ord n, Eq n, PrettyPrint n)
+tcTyAbs :: (Ord n, Eq n, Pretty n)
         => UniqueSupply n
         -> Context n (Ty n)
         -> n
@@ -67,7 +67,7 @@ tcTyAbs :: (Ord n, Eq n, PrettyPrint n)
 tcTyAbs uniqs ctx ty body = TyForAll ty <$> typecheck uniqs ctx' body
   where ctx' = insert ty (TyVar ty) ctx
 
-tcTyApp :: (Ord n, Eq n, PrettyPrint n)
+tcTyApp :: (Ord n, Eq n, Pretty n)
         => UniqueSupply n
         -> Context n (Ty n)
         -> SystemFExpr n n
@@ -109,11 +109,12 @@ subTy name t1 t2@(TyForAll name' t2')
   | otherwise     = TyForAll name' (subTy name t2 t2')
 
 
-tyMismatchMsg :: (PrettyPrint t, PrettyPrint t')
-              => t
-              -> t'
-              -> String
+tyMismatchMsg
+  :: (Pretty t1, Pretty t2)
+  => t1
+  -> t2
+  -> String
 tyMismatchMsg expected actual = "Couldn't match expected type " ++
-                                prettyPrint expected ++
+                                show (prettyPrint expected) ++
                                 " with actual type " ++
-                                prettyPrint actual
+                                show (prettyPrint actual)

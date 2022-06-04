@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8e2e9425b4a54d46f459305956713f82d119c9dadc843fce680da7f5393cffd8
+-- hash: c5c12a4b6b15c355fd55f5adfbebf87c8f81293245566a2cd752d10bcd96e18e
 
 name:           lambda-calculator
 version:        2.0.0
@@ -32,7 +32,6 @@ library
       Language.Lambda.Untyped.Eval
       Language.Lambda.Untyped.Parser
       Language.Lambda.Untyped.State
-      Language.Lambda.Util.PrettyPrint
       Language.Lambda.SystemF
       Language.Lambda.SystemF.Expression
       Language.Lambda.SystemF.Parser
@@ -214,7 +213,6 @@ test-suite lambda-calculus-test
       Language.Lambda.Untyped.HspecUtils
       Language.Lambda.Untyped.ParserSpec
       Language.Lambda.UntypedSpec
-      Language.Lambda.Util.PrettyPrintSpec
       Paths_lambda_calculator
   hs-source-dirs:
       test

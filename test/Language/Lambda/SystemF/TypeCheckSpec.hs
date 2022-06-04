@@ -2,14 +2,13 @@ module Language.Lambda.SystemF.TypeCheckSpec (spec) where
 
 import Data.Either
 import Data.Map
-
+import Prettyprinter
 import Test.Hspec
 
-import Language.Lambda.Util.PrettyPrint
 import Language.Lambda.SystemF.Expression
 import Language.Lambda.SystemF.TypeCheck
 
-tc :: (Ord n, Eq n, PrettyPrint n)
+tc :: (Ord n, Eq n, Pretty n)
           => UniqueSupply n 
           -> [(n, Ty n)]
           -> SystemFExpr n n 

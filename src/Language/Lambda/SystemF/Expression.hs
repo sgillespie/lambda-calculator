@@ -1,146 +1,124 @@
-module Language.Lambda.SystemF.Expression where
+module Language.Lambda.SystemF.Expression
+  ( SystemFExpr(..),
+    Ty(..),
+    prettyPrint,
+    upperLambda
+  ) where
 
 import Data.Monoid
-import Prelude
-
-import Language.Lambda.Util.PrettyPrint
+import Prettyprinter
+import Prettyprinter.Render.Text (renderStrict)
+import RIO
 
 data SystemFExpr name ty
-  = Var name                                        -- Variable
-  | App (SystemFExpr name ty) (SystemFExpr name ty) -- Application
-  | Abs name (Ty ty) (SystemFExpr name ty)          -- Abstraction
-  | TyAbs ty (SystemFExpr name ty)                  -- Type Abstraction
-                                                    -- \X. body
-
-  | TyApp (SystemFExpr name ty) (Ty ty)             -- Type Application
-                                                    -- x [X]
+  -- | Variable: `x`
+  = Var name
+  -- | Function application: `x y`
+  | App (SystemFExpr name ty) (SystemFExpr name ty)
+  -- | Lambda abstraction: `\x: X. x`
+  | Abs name (Ty ty) (SystemFExpr name ty)
+  -- | Type Abstraction: `\X. body`
+  | TyAbs ty (SystemFExpr name ty)                  
+  -- | Type Application: `x [X]`
+  | TyApp (SystemFExpr name ty) (Ty ty)
   deriving (Eq, Show)
 
 data Ty name
-  = TyVar name                  -- Type variable (T)
-  | TyArrow (Ty name) (Ty name) -- Type arrow    (T -> U)
-  | TyForAll name (Ty name)     -- Universal type (forall T. X)
+  = TyVar name                  -- ^ Type variable (T)
+  | TyArrow (Ty name) (Ty name) -- ^ Type arrow    (T -> U)
+  | TyForAll name (Ty name)     -- ^ Universal type (forall T. X)
   deriving (Eq, Show)
 
--- Pretty printing
-instance (PrettyPrint n, PrettyPrint t) => PrettyPrint (SystemFExpr n t) where
-  prettyPrint = prettyPrint . pprExpr empty
+instance (Pretty name, Pretty ty) => Pretty (SystemFExpr name ty) where
+  pretty (Var name) = pretty name
+  pretty (App e1 e2) = prettyApp e1 e2
+  pretty (Abs name ty body) = prettyAbs name ty body
+  pretty (TyAbs ty body) = prettyTyAbs ty body
+  pretty (TyApp expr ty) = prettyTyApp expr ty
 
-instance PrettyPrint n => PrettyPrint (Ty n) where
-  prettyPrint = prettyPrint . pprTy empty True
+instance Pretty name => Pretty (Ty name) where
+  pretty = prettyTy False
 
--- Same as prettyPrint, but we assume the same type for names and types. Useful
--- for testing.
-prettyPrint' :: PrettyPrint n => SystemFExpr n n -> String
-prettyPrint' = prettyPrint
+prettyPrint :: Pretty pretty => pretty -> Text
+prettyPrint expr = renderStrict docStream
+  where docStream = layoutPretty defaultLayoutOptions (pretty expr)
 
--- Pretty print a system f expression
-pprExpr :: (PrettyPrint n, PrettyPrint t) 
-        => PDoc String 
-        -> SystemFExpr n t
-        -> PDoc String
-pprExpr pdoc (Var n)        = prettyPrint n `add` pdoc
-pprExpr pdoc (App e1 e2)    = pprApp pdoc e1 e2
-pprExpr pdoc (Abs n t body) = pprAbs pdoc n t body
-pprExpr pdoc (TyAbs t body) = pprTAbs pdoc t body
-pprExpr pdoc (TyApp e ty)   = pprTApp pdoc e ty
+upperLambda :: Char
+upperLambda = 'Λ'
 
--- Pretty print an application
-pprApp :: (PrettyPrint n, PrettyPrint t)
-       => PDoc String
-       -> SystemFExpr n t
-       -> SystemFExpr n t
-       -> PDoc String
-pprApp pdoc e1@Abs{} e2@Abs{} = betweenParens (pprExpr pdoc e1) pdoc
-  `mappend` addSpace (betweenParens (pprExpr pdoc e2) pdoc)
-pprApp pdoc e1 e2@App{} = pprExpr pdoc e1
-  `mappend` addSpace (betweenParens (pprExpr pdoc e2) pdoc)
-pprApp pdoc e1 e2@Abs{} = pprExpr pdoc e1
-  `mappend` addSpace (betweenParens (pprExpr pdoc e2) pdoc)
-pprApp pdoc e1@Abs{} e2 = betweenParens (pprExpr pdoc e1) pdoc
-  `mappend` addSpace (pprExpr pdoc e2)
-pprApp pdoc e1 e2
-  = pprExpr pdoc e1 `mappend` addSpace (pprExpr pdoc e2)
+prettyApp
+  :: (Pretty name, Pretty ty)
+  => SystemFExpr name ty
+  -> SystemFExpr name ty
+  -> Doc a
+prettyApp e1@Abs{} e2@Abs{} = parens (pretty e1) <+> parens (pretty e2)
+prettyApp e1@Abs{} e2 = parens (pretty e1) <+> pretty e2
+prettyApp e1 e2@Abs{} = pretty e1 <+> parens (pretty e2)
+prettyApp e1 e2@App{} = pretty e1 <+> parens (pretty e2)
+prettyApp e1 e2 = pretty e1 <+> pretty e2
 
-pprTApp :: (PrettyPrint n, PrettyPrint t)
-        => PDoc String
-        -> SystemFExpr n t
-        -> Ty t
-        -> PDoc String
-pprTApp pdoc expr ty = expr' `mappend` addSpace (between ty' "[" "]" empty)
-  where expr' = pprExpr pdoc expr
-        ty' = add (prettyPrint ty) empty
+prettyAbs
+  :: (Pretty name, Pretty ty)
+  => name
+  -> Ty ty
+  -> SystemFExpr name ty
+  -> Doc ann
+prettyAbs name ty body
+  = lambda
+    <+> hsep (map (uncurry prettyArg) names)
+    <> dot
+    <+> pretty body'
+  where (names, body') = uncurryAbs name ty body
 
--- Pretty print an abstraction
-pprAbs :: (PrettyPrint n, PrettyPrint t)
-       => PDoc String
-       -> n
-       -> Ty t
-       -> SystemFExpr n t
-       -> PDoc String
-pprAbs pdoc name ty body = between vars' lambda' ". " (pprExpr pdoc body')
-  where (vars, body') = uncurryAbs name ty body
-        vars' = intercalate (map (uncurry pprArg) vars) " " empty
-        lambda' = [lambda, space]
+prettyTyAbs :: (Pretty name, Pretty ty) => ty -> SystemFExpr name ty -> Doc ann
+prettyTyAbs name body = upperLambda' <+> hsep (map pretty names) <> dot
+    <+> pretty body'
+  where (names, body') = uncurryTyAbs name body
+prettyTyApp :: (Pretty name, Pretty ty) => SystemFExpr name ty -> Ty ty -> Doc ann
+prettyTyApp expr ty = pretty expr <+> brackets (pretty ty)
 
-        pprArg n t = prettyPrint n ++ (':':pprArg' t)
-        pprArg' t@(TyVar _)     = prettyPrint t
-        pprArg' t@(TyArrow _ _) = prettyPrint $ betweenParens (pprTy empty False t) empty
+prettyTy :: Pretty name => Bool -> Ty name -> Doc ann
+prettyTy _ (TyVar name) = pretty name
+prettyTy compact (TyArrow t1 t2) = prettyTyArrow compact t1 t2
+prettyTy compact (TyForAll name ty) = prettyTyForAll compact name ty
 
--- Pretty print types
-pprTy :: PrettyPrint n
-      => PDoc String
-      -> Bool -- Add a space between arrows?
-      -> Ty n
-      -> PDoc String
-pprTy pdoc space (TyVar n) = prettyPrint n `add` pdoc
-pprTy pdoc space (TyArrow a b) = pprTyArrow pdoc space a b
-pprTy pdoc _     (TyForAll n t) =  pprTyForAll pdoc n t
+prettyTyArrow :: Pretty name => Bool -> Ty name -> Ty name -> Doc ann
+prettyTyArrow compact (TyArrow t1 t2) t3
+  = prettyTyArrow' compact compositeTy $ prettyTy compact t3
+  where compositeTy = parens $ prettyTyArrow compact t1 t2
 
-pprTyArrow :: PrettyPrint n
-           => PDoc String
-           -> Bool -- Add a space between arrows?
-           -> Ty n
-           -> Ty n
-           -> PDoc String
-pprTyArrow pdoc space a@(TyVar _) b = pprTyArrow' space (pprTy pdoc space a) 
-                                                        (pprTy pdoc space b)
-pprTyArrow pdoc space (TyArrow a1 a2) b = pprTyArrow' space a' (pprTy pdoc space b)
-  where a' = betweenParens (pprTyArrow pdoc space a1 a2) empty
+prettyTyArrow compact t1 t2
+  = prettyTyArrow' compact (prettyTy compact t1) (prettyTy compact t2)
 
-pprTyArrow' :: Bool -- Add a space between arrows?
-            -> PDoc String
-            -> PDoc String
-            -> PDoc String
-pprTyArrow' space a b = a <> arrow <> b
-  where arrow | space     = " -> " `add` empty
-              | otherwise = "->" `add` empty
+prettyTyForAll :: Pretty name => Bool -> name -> Ty name -> Doc ann
+prettyTyForAll compact name ty
+  = "forall"
+  <+> pretty name <> dot
+  <+> prettyTy compact ty
 
-pprTyForAll :: PrettyPrint n
-            => PDoc String
-            -> n
-            -> Ty n
-            -> PDoc String
-pprTyForAll pdoc n t = prefix <> prettyPrint t `add` pdoc
-  where prefix = between (prettyPrint n `add` empty) "forall " ". " empty
+lambda :: Doc ann
+lambda = pretty 'λ'
 
--- Pretty print a type abstraction
-pprTAbs :: (PrettyPrint n, PrettyPrint t)
-        => PDoc String
-        -> t
-        -> SystemFExpr n t
-        -> PDoc String
-pprTAbs pdoc ty body = between vars' lambda' ". " (pprExpr pdoc body')
-  where (vars, body') = uncurryTAbs ty body
-        vars' = intercalate (map prettyPrint vars) " " empty
-        lambda' = [upperLambda, space]
+prettyArg :: (Pretty name, Pretty ty) => name -> Ty ty -> Doc ann
+prettyArg name (TyArrow t1 t2)
+  = pretty name <> colon <> parens (prettyTyArrow True t1 t2)
+prettyArg name ty = pretty name <> colon <> pretty ty
+
+upperLambda' :: Doc ann
+upperLambda' = pretty upperLambda
+
+prettyTyArrow' :: Bool -> Doc ann -> Doc ann -> Doc ann
+prettyTyArrow' compact doc1 doc2 = doc1 `add'` "->" `add'` doc2
+  where add'
+          | compact = (<>) 
+          | otherwise = (<+>)
 
 uncurryAbs :: n -> Ty t -> SystemFExpr n t -> ([(n, Ty t)], SystemFExpr n t)
 uncurryAbs name ty = uncurry' [(name, ty)] 
   where uncurry' ns (Abs n' t' body') = uncurry' ((n', t'):ns) body'
         uncurry' ns body'             = (reverse ns, body')
 
-uncurryTAbs :: t -> SystemFExpr n t -> ([t], SystemFExpr n t)
-uncurryTAbs ty = uncurry' [ty]
+uncurryTyAbs :: t -> SystemFExpr n t -> ([t], SystemFExpr n t)
+uncurryTyAbs ty = uncurry' [ty]
   where uncurry' ts (TyAbs t' body') = uncurry' (t':ts) body'
         uncurry' ts body'            = (reverse ts, body')

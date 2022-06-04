@@ -72,7 +72,6 @@ library:
     - Language.Lambda.Untyped.Eval
     - Language.Lambda.Untyped.Parser
     - Language.Lambda.Untyped.State
-    - Language.Lambda.Util.PrettyPrint
     - Language.Lambda.SystemF
     - Language.Lambda.SystemF.Expression
     - Language.Lambda.SystemF.Parser

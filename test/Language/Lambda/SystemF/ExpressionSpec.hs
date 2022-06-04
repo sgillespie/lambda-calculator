@@ -1,13 +1,19 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings, NoImplicitPrelude #-}
 module Language.Lambda.SystemF.ExpressionSpec where
 
+import RIO
 import Test.Hspec
 
-import Language.Lambda.Util.PrettyPrint
 import Language.Lambda.SystemF.Expression
 
 spec :: Spec
 spec = describe "prettyPrint" $ do
+  let prettyPrint' :: SystemFExpr Text Text -> Text
+      prettyPrint' = prettyPrint
+
+      prettyPrintTy :: Ty Text -> Text
+      prettyPrintTy = prettyPrint
+  
   it "prints simple variables" $
     prettyPrint' (Var "x") `shouldBe` "x"
 
@@ -15,27 +21,27 @@ spec = describe "prettyPrint" $ do
     prettyPrint' (App (Var "a") (Var "b")) `shouldBe` "a b"
 
   it "prints simple abstractions" $ 
-    prettyPrint (Abs "x" (TyVar "T") (Var "x")) `shouldBe` "λ x:T. x"
+    prettyPrint' (Abs "x" (TyVar "T") (Var "x")) `shouldBe` "λ x:T. x"
 
   it "prints simple type abstractions" $
-    prettyPrint (TyAbs (TyVar "X") (Var "x")) `shouldBe` "Λ X. x"
+    prettyPrint' (TyAbs "X" (Var "x")) `shouldBe` "Λ X. x"
 
   it "prints simple type applications" $ 
     prettyPrint' (TyApp (Var "t") (TyVar "T")) `shouldBe` "t [T]"
 
   it "prints nested abstractions" $
-    prettyPrint (Abs "f" (TyVar "F") (Abs "x" (TyVar "X") (Var "x")))
+    prettyPrint' (Abs "f" (TyVar "F") (Abs "x" (TyVar "X") (Var "x")))
       `shouldBe` "λ f:F x:X. x"
 
   it "prints abstractions with composite types" $ do
-    prettyPrint (Abs "f" (TyArrow (TyVar "X") (TyVar "Y")) (Var "f"))
+    prettyPrint' (Abs "f" (TyArrow (TyVar "X") (TyVar "Y")) (Var "f"))
       `shouldBe ` "λ f:(X->Y). f"
 
-    prettyPrint (Abs "f" (TyArrow (TyVar "X") (TyArrow (TyVar "Y") (TyVar "Z"))) (Var "f"))
+    prettyPrint' (Abs "f" (TyArrow (TyVar "X") (TyArrow (TyVar "Y") (TyVar "Z"))) (Var "f"))
       `shouldBe ` "λ f:(X->Y->Z). f"
 
   it "prints nested type abstractions" $
-    prettyPrint (TyAbs (TyVar "A") (TyAbs (TyVar "B") (Var "x")))
+    prettyPrint' (TyAbs "A" (TyAbs "B" (Var "x")))
       `shouldBe` "Λ A B. x"
 
   it "prints nested applications" $
@@ -46,35 +52,35 @@ spec = describe "prettyPrint" $ do
     prettyPrint' (App (Var "w") (App (Var "x") (Var "y")))
       `shouldBe` "w (x y)"
 
-    prettyPrint (App (Abs "t" (TyVar "T") (Var "t")) (Var "x"))
+    prettyPrint' (App (Abs "t" (TyVar "T") (Var "t")) (Var "x"))
       `shouldBe` "(λ t:T. t) x"
 
-    prettyPrint (App (Abs "f" (TyVar "F") (Var "f")) (Abs "g" (TyVar "G") (Var "g")))
+    prettyPrint' (App (Abs "f" (TyVar "F") (Var "f")) (Abs "g" (TyVar "G") (Var "g")))
       `shouldBe` "(λ f:F. f) (λ g:G. g)"
 
   it "prints simple types" $
-    prettyPrint (TyVar "X") `shouldBe` "X"
+    prettyPrintTy (TyVar "X") `shouldBe` "X"
 
   it "print simple arrow types" $
-    prettyPrint (TyArrow (TyVar "A") (TyVar "B")) `shouldBe` "A -> B"
+    prettyPrintTy (TyArrow (TyVar "A") (TyVar "B")) `shouldBe` "A -> B"
 
   it "prints simple forall types" $
-    prettyPrint (TyForAll "X" (TyVar "X")) `shouldBe` "forall X. X"
+    prettyPrintTy (TyForAll "X" (TyVar "X")) `shouldBe` "forall X. X"
 
   it "prints chained arrow types" $
-    prettyPrint (TyArrow (TyVar "X") (TyArrow (TyVar "Y") (TyVar "Z")))
+    prettyPrintTy (TyArrow (TyVar "X") (TyArrow (TyVar "Y") (TyVar "Z")))
       `shouldBe` "X -> Y -> Z"
 
   it "prints nested arrow types" $
-    prettyPrint (TyArrow (TyArrow (TyVar "T") (TyVar "U")) (TyVar "V"))
+    prettyPrintTy (TyArrow (TyArrow (TyVar "T") (TyVar "U")) (TyVar "V"))
       `shouldBe` "(T -> U) -> V"
 
   it "prints complex forall types" $
-    prettyPrint (TyForAll "A" (TyArrow (TyVar "A") (TyVar "A")))
+    prettyPrintTy (TyForAll "A" (TyArrow (TyVar "A") (TyVar "A")))
       `shouldBe` "forall A. A -> A"
 
   it "prints nested forall types" $
-    prettyPrint (TyForAll "W" 
+    prettyPrintTy (TyForAll "W" 
                   (TyForAll "X" 
                     (TyArrow (TyVar "W") (TyArrow (TyVar "X") (TyVar "Y")))))
       `shouldBe` "forall W. forall X. W -> X -> Y"
