@@ -1,120 +1,122 @@
 module Language.Lambda.SystemF.TypeCheck where
 
-import Data.Map
-import Prettyprinter
-import Prelude hiding (lookup)
-
+import Language.Lambda.Shared.Errors (LambdaException(..))
 import Language.Lambda.SystemF.Expression
+import Language.Lambda.SystemF.State
+
+import Control.Monad.Except (MonadError(..))
+import Prettyprinter
+import RIO
+import qualified RIO.List as List
+import qualified RIO.Map as Map
 
 type UniqueSupply n = [n]
-type Context n t = Map n t
+type Context' n t = Map n t
 
-typecheck :: (Ord n, Eq n, Pretty n)
-          => UniqueSupply n 
-          -> Context n (Ty n)
-          -> SystemFExpr n n 
-          -> Either String (Ty n)
-typecheck uniqs ctx (Var v)        = tcVar uniqs ctx v
-typecheck uniqs ctx (Abs n t body) = tcAbs uniqs ctx n t body
-typecheck uniqs ctx (App e1 e2)    = tcApp uniqs ctx e1 e2
-typecheck uniqs ctx (TyAbs t body) = tcTyAbs uniqs ctx t body
-typecheck uniqs ctx (TyApp e ty)   = tcTyApp uniqs ctx e ty
+-- TODO: name/ty different types
+typecheck
+  :: (Ord name, Pretty name)
+  => SystemFExpr name name
+  -> Typecheck name (Ty name)
+typecheck (Var v) = typecheckVar v
+typecheck (Abs n t body) = typecheckAbs n t body
+typecheck (App e1 e2) = typecheckApp e1 e2
+typecheck (TyAbs t body) = typecheckTyAbs t body
+typecheck (TyApp e ty) = typecheckTyApp e ty
 
-tcVar :: (Ord n, Eq n, Pretty n)
-      => UniqueSupply n
-      -> Context n (Ty n)
-      -> n
-      -> Either String (Ty n)
-tcVar uniqs ctx var = maybe (TyVar <$> unique uniqs) return (lookup var ctx)
+typecheckVar :: Ord name => name -> Typecheck name (Ty name)
+typecheckVar var = getContext >>= defaultToFreshTyVar . Map.lookup var
+  where defaultToFreshTyVar (Just v) = return v
+        defaultToFreshTyVar Nothing = TyVar <$> unique
 
-tcAbs :: (Ord n, Eq n, Pretty n)
-      => UniqueSupply n
-      -> Context n (Ty n)
-      -> n
-      -> Ty n
-      -> SystemFExpr n n
-      -> Either String (Ty n)
-tcAbs uniqs ctx name ty body = TyArrow ty <$> typecheck uniqs ctx' body
-  where ctx' = insert name ty ctx
+typecheckAbs
+  :: (Ord name, Pretty name)
+  => name
+  -> Ty name
+  -> SystemFExpr name name
+  -> Typecheck name (Ty name)
+typecheckAbs name ty body
+  = modifyContext (Map.insert name ty)
+    >> TyArrow ty <$> typecheck body
 
-tcApp :: (Ord n, Eq n, Pretty n)
-      => UniqueSupply n
-      -> Context n (Ty n)
-      -> SystemFExpr n n
-      -> SystemFExpr n n
-      -> Either String (Ty n)
-tcApp uniqs ctx e1 e2 = do
-    t1 <- typecheck uniqs ctx e1
-    t2 <- typecheck uniqs ctx e2
+typecheckApp
+  :: (Ord name, Pretty name)
+  => SystemFExpr name name
+  -> SystemFExpr name name
+  -> Typecheck name (Ty name)
+typecheckApp e1 e2 = do
+  -- Typecheck expressions
+  t1 <- typecheck e1
+  t2 <- typecheck e2
 
-    -- Unwrap t1; Should be (t2 -> *)
-    (t2', t3) <- either genMismatchVar return (arrow t1)
+  -- Verify the type of t1 is an Arrow
+  (t1AppInput, t1AppOutput) <- case t1 of
+    (TyArrow appInput appOutput) -> return (appInput, appOutput)
+    t1' -> throwError $ tyMismatchError t1' t1
 
-    if t2' == t2
-      then return t3
-      else Left $ tyMismatchMsg (TyArrow t2 t3) (TyArrow t1 t3)
+  -- Verify the output of e1 matches the type of e2
+  if t1AppInput == t2
+    then return t1AppOutput
+    else throwError $ tyMismatchError (TyArrow t2 t1AppOutput) (TyArrow t1 t1AppOutput)
 
-  where genMismatchVar expected = unique uniqs >>= Left . tyMismatchMsg expected
-        arrow (TyArrow t1 t2) = return (t1, t2)
-        arrow t               = Left t
+typecheckTyAbs
+  :: (Ord name, Pretty name)
+  => name
+  -> SystemFExpr name name
+  -> Typecheck name (Ty name)
+typecheckTyAbs ty body
+  = modifyContext (Map.insert ty (TyVar ty))
+    >> TyForAll ty <$> typecheck body
 
-tcTyAbs :: (Ord n, Eq n, Pretty n)
-        => UniqueSupply n
-        -> Context n (Ty n)
-        -> n
-        -> SystemFExpr n n
-        -> Either String (Ty n)
-tcTyAbs uniqs ctx ty body = TyForAll ty <$> typecheck uniqs ctx' body
-  where ctx' = insert ty (TyVar ty) ctx
+typecheckTyApp
+  :: (Ord name, Pretty name)
+  => SystemFExpr name name
+  -> Ty name
+  -> Typecheck name (Ty name)
+typecheckTyApp (TyAbs t expr) ty = typecheck $ substitute ty t expr
+typecheckTyApp expr _ = typecheck expr
 
-tcTyApp :: (Ord n, Eq n, Pretty n)
-        => UniqueSupply n
-        -> Context n (Ty n)
-        -> SystemFExpr n n
-        -> Ty n
-        -> Either String (Ty n)
-tcTyApp uniqs ctx (TyAbs t expr) ty = typecheck uniqs ctx expr'
-  where expr' = sub t ty expr
-tcTyApp uniqs ctx expr ty = typecheck uniqs ctx expr
+unique :: Typecheck name name
+unique = getUniques >>= fromJust' . List.headMaybe
+  where fromJust' (Just u) = return u
+        fromJust' Nothing = throwError ImpossibleError
 
--- Utilities
-unique :: UniqueSupply t
-       -> Either String t
-unique (u:_) = return u
-unique _     = Left "Unique supply ran out"
+substitute
+  :: Eq n
+  => Ty n
+  -> n
+  -> SystemFExpr n n
+  -> SystemFExpr n n
+substitute ty name (App e1 e2) = App (substitute ty name e1) (substitute ty name e2)
+substitute ty name (Abs n ty' e) = Abs n (substituteTy ty name ty') (substitute ty name e)
+substitute ty name (TyAbs ty' e) = TyAbs ty' (substitute ty name e) 
+substitute ty name (TyApp e ty') = TyApp (substitute ty name e) (substituteTy ty name ty')
+substitute _ _ expr = expr
 
-sub :: Eq n
-    => n
-    -> Ty n
-    -> SystemFExpr n n
-    -> SystemFExpr n n
-sub name ty (App e1 e2)   = App (sub name ty e1) (sub name ty e2)
-sub name ty (Abs n ty' e) = Abs n (subTy name ty ty') (sub name ty e)
-sub name ty (TyAbs ty' e) = TyAbs ty' (sub name ty e) 
-sub name ty (TyApp e ty') = TyApp (sub name ty e) (subTy name ty ty')
-sub name ty expr = expr
-
-subTy :: Eq n
-      => n
-      -> Ty n
-      -> Ty n
-      -> Ty n
-subTy name ty (TyArrow t1 t2) 
-  = TyArrow (subTy name ty t1) (subTy name ty t2)
-subTy name ty ty'@(TyVar name') 
+substituteTy
+  :: Eq name
+  => Ty name
+  -> name
+  -> Ty name
+  -> Ty name
+substituteTy ty name (TyArrow t1 t2) 
+  = TyArrow (substituteTy ty name t1) (substituteTy ty name t2)
+substituteTy ty name ty'@(TyVar name') 
   | name == name' = ty
   | otherwise     = ty'
-subTy name t1 t2@(TyForAll name' t2') 
+substituteTy _ name t2@(TyForAll name' t2') 
   | name == name' = t2
-  | otherwise     = TyForAll name' (subTy name t2 t2')
+  | otherwise     = TyForAll name' (substituteTy t2 name t2')
 
 
-tyMismatchMsg
+tyMismatchError
   :: (Pretty t1, Pretty t2)
   => t1
   -> t2
-  -> String
-tyMismatchMsg expected actual = "Couldn't match expected type " ++
-                                show (prettyPrint expected) ++
-                                " with actual type " ++
-                                show (prettyPrint actual)
+  -> LambdaException
+tyMismatchError expected actual
+  = TyMismatchError
+  $ "Couldn't match expected type "
+  <> prettyPrint expected
+  <> " with actual type "
+  <> prettyPrint actual

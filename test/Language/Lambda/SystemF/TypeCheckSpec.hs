@@ -5,15 +5,12 @@ import Data.Map
 import Prettyprinter
 import Test.Hspec
 
+import Language.Lambda.Shared.Errors
 import Language.Lambda.SystemF.Expression
+import Language.Lambda.SystemF.State
 import Language.Lambda.SystemF.TypeCheck
 
-tc :: (Ord n, Eq n, Pretty n)
-          => UniqueSupply n 
-          -> [(n, Ty n)]
-          -> SystemFExpr n n 
-          -> Either String (Ty n)
-tc uniqs ctx = typecheck uniqs (fromList ctx)
+tc uniqs ctx expr = execTypecheck (typecheck expr) (TypecheckState (fromList ctx) uniqs)
 
 spec :: Spec
 spec = describe "typecheck" $ do

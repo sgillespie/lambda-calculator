@@ -75,6 +75,7 @@ library:
     - Language.Lambda.SystemF
     - Language.Lambda.SystemF.Expression
     - Language.Lambda.SystemF.Parser
+    - Language.Lambda.SystemF.State
     - Language.Lambda.SystemF.TypeCheck
   default-extensions:
     - NoImplicitPrelude

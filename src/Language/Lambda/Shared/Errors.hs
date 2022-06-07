@@ -23,6 +23,12 @@ data LambdaException
   --     x (let y = z)
   | InvalidLet Text -- ^ A let binding nested in another expression
 
+  -- | The expected type does not match the actual type
+  -- Examples:
+  --
+  --     (\x: X. x) (y:Y)
+  | TyMismatchError Text
+
   -- | A catch-all error that indicates a bug in this project
   | ImpossibleError
   deriving (Eq, Typeable)

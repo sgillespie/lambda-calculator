@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c5c12a4b6b15c355fd55f5adfbebf87c8f81293245566a2cd752d10bcd96e18e
+-- hash: 9adcadb91eeb3f58717537a9ea10f6b653481126a1bfe040a81854f51508e8c8
 
 name:           lambda-calculator
 version:        2.0.0
@@ -35,6 +35,7 @@ library
       Language.Lambda.SystemF
       Language.Lambda.SystemF.Expression
       Language.Lambda.SystemF.Parser
+      Language.Lambda.SystemF.State
       Language.Lambda.SystemF.TypeCheck
   other-modules:
       Language.Lambda
