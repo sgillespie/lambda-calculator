@@ -1,27 +1,11 @@
-# Lambda Calculus
-[![Build Status](https://travis-ci.org/sgillespie/lambda-calculus.svg?branch=master)](https://travis-ci.org/sgillespie/lambda-calculus)
+# Lambda Calculator
+> Untyped lambda calculus interpreter.
 
-Lambda Calculus is a tiny functional language for expressing computation based 
-on function abstraction and application. 
+A simple implementation of the Untyped Lambda Calculus. It is written in Haskell and is
+implemented to be as easy as possible to follow, at the possible expense of performance.
 
 This project is intended to be an educational resource for learning and 
 implementing functional programming languages.
-
-# Introduction to Lambda Calculus
-Introductory material is provided. They can be found at
-
- * [doc/lambda-calculus.md](doc/lambda-calculus.md)
- * [doc/system-f.md](doc/system-f.md)
-
-## Extended Examples
-More examples can be found in the test-suite, located at
-
-[test/Language/Lambda/Examples](test/Language/Lambda/Examples)
-
-# Implementation
-A simple implementation of the untyped lambda calculus is included. It is written in 
-Haskell and is implemented to be as easy to follow, at the possible expense of 
-performance.
 
 ## Building
 In order to build, you will need
@@ -44,7 +28,7 @@ Once the program is installed, you simply run it:
     
 This will open a repl (read-eval-print loop) prompt
 
-    Lambda Calculator (0.5.0)
+    Lambda Calculator (3.0.0.0)
     Type :h for help
 
 You can start typing lambda calculus expressions and the program will evaluate them
