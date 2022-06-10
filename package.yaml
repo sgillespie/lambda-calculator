@@ -67,6 +67,7 @@ library:
   source-dirs: src
   exposed-modules:
     - Language.Lambda.Shared.Errors
+    - Language.Lambda.Shared.UniqueSupply
     - Language.Lambda.Untyped
     - Language.Lambda.Untyped.Expression
     - Language.Lambda.Untyped.Eval

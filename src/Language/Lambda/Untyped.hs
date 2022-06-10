@@ -18,6 +18,7 @@ import RIO
 import qualified RIO.Text as Text
 
 import Language.Lambda.Shared.Errors
+import Language.Lambda.Shared.UniqueSupply (defaultUniques)
 import Language.Lambda.Untyped.Eval
 import Language.Lambda.Untyped.Expression
 import Language.Lambda.Untyped.Parser
@@ -46,11 +47,6 @@ unsafeExecEvalText
   -> LambdaExpr Text
 unsafeExecEvalText input globals'
   = unsafeExecEval (evalText input) (mkState globals')
-
-defaultUniques :: [Text]
-defaultUniques = map Text.pack strings
-  where strings = concatMap (\p -> map (:p) . reverse $ ['a'..'z']) suffix
-        suffix = "" : map show [(0::Int)..]
 
 mkState :: Globals Text -> EvalState Text
 mkState = flip EvalState defaultUniques
