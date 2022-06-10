@@ -1,5 +1,5 @@
 name: lambda-calculator
-version: '2.0.0'
+version: '3.0.0'
 synopsis: A lambda calculus interpreter
 description: Please see README.md
 category: LambdaCalculus,Language,Teaching
