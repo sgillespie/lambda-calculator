@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dab11bad181558e351ddbf077d15b1b101b2b6d9bcd627327e9aedffb0c00b86
+-- hash: 089fe9b55bbab6cbfceb1623b5f1eb4f8c706b39fa51ad2d87957cefea80301c
 
 name:           lambda-calculator
-version:        2.0.0
+version:        3.0.0
 synopsis:       A lambda calculus interpreter
 description:    Please see README.md
 category:       LambdaCalculus,Language,Teaching
@@ -80,7 +80,7 @@ library
       ViewPatterns
       NoImplicitPrelude
       OverloadedStrings
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints
+  ghc-options: -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.9 && <5
     , containers
@@ -138,7 +138,7 @@ executable lambda-calculator
       ViewPatterns
       NoImplicitPrelude
       OverloadedStrings
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints
+  ghc-options: -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.9 && <5
     , bytestring
@@ -193,7 +193,7 @@ test-suite lambda-calculus-lint
       TypeSynonymInstances
       ViewPatterns
       ImplicitPrelude
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.9 && <5
     , hlint
@@ -256,7 +256,7 @@ test-suite lambda-calculus-test
       TypeFamilies
       TypeSynonymInstances
       ViewPatterns
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HUnit
     , base >=4.9 && <5

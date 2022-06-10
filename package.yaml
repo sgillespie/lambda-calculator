@@ -1,13 +1,13 @@
 name: lambda-calculator
-version: '3.0.0'
+version: '3.0.0.1'
 synopsis: A lambda calculus interpreter
-description: Please see README.md
+description: A simple implementation of the Untyped Lambda Calculus
 category: LambdaCalculus,Language,Teaching
 author: Sean D Gillespie
 maintainer: sean@mistersg.net
 copyright: 2016 Sean Gillespie
 license: MIT
-github: sgillespie/lambda-calculus
+github: sgillespie/lambda-calculator
 
 dependencies:
   - base >= 4.9 && < 5
@@ -16,10 +16,6 @@ dependencies:
   - rio
 
 ghc-options:
-  - -threaded
-  - -rtsopts
-  - -with-rtsopts=-N
-  - -Wall
   - -Wcompat
   - -Widentities
   - -Wincomplete-record-updates
@@ -99,6 +95,10 @@ executables:
       - optparse-applicative
       - repline
       - text
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
     
 tests:
   lambda-calculus-test:
