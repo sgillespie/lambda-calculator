@@ -16,7 +16,7 @@ type Context' n t = Map n t
 -- TODO: name/ty different types
 typecheck
   :: (Ord name, Pretty name)
-  => SystemFExpr name name
+  => SystemFExpr name
   -> Typecheck name (Ty name)
 typecheck (Var v) = typecheckVar v
 typecheck (Abs n t body) = typecheckAbs n t body
@@ -33,7 +33,7 @@ typecheckAbs
   :: (Ord name, Pretty name)
   => name
   -> Ty name
-  -> SystemFExpr name name
+  -> SystemFExpr name
   -> Typecheck name (Ty name)
 typecheckAbs name ty body
   = modifyContext (Map.insert name ty)
@@ -41,8 +41,8 @@ typecheckAbs name ty body
 
 typecheckApp
   :: (Ord name, Pretty name)
-  => SystemFExpr name name
-  -> SystemFExpr name name
+  => SystemFExpr name
+  -> SystemFExpr name
   -> Typecheck name (Ty name)
 typecheckApp e1 e2 = do
   -- Typecheck expressions
@@ -62,7 +62,7 @@ typecheckApp e1 e2 = do
 typecheckTyAbs
   :: (Ord name, Pretty name)
   => name
-  -> SystemFExpr name name
+  -> SystemFExpr name
   -> Typecheck name (Ty name)
 typecheckTyAbs ty body
   = modifyContext (Map.insert ty (TyVar ty))
@@ -70,7 +70,7 @@ typecheckTyAbs ty body
 
 typecheckTyApp
   :: (Ord name, Pretty name)
-  => SystemFExpr name name
+  => SystemFExpr name
   -> Ty name
   -> Typecheck name (Ty name)
 typecheckTyApp (TyAbs t expr) ty = typecheck $ substitute ty t expr
@@ -85,8 +85,8 @@ substitute
   :: Eq n
   => Ty n
   -> n
-  -> SystemFExpr n n
-  -> SystemFExpr n n
+  -> SystemFExpr n
+  -> SystemFExpr n
 substitute ty name (App e1 e2) = App (substitute ty name e1) (substitute ty name e2)
 substitute ty name (Abs n ty' e) = Abs n (substituteTy ty name ty') (substitute ty name e)
 substitute ty name (TyAbs ty' e) = TyAbs ty' (substitute ty name e) 
@@ -109,10 +109,7 @@ substituteTy _ name t2@(TyForAll name' t2')
   | otherwise     = TyForAll name' (substituteTy t2 name t2')
 
 tyMismatchError
-  :: (Pretty t1, Pretty t2)
-  => t1
-  -> t2
-  -> LambdaException
+  :: Pretty ty => ty -> ty -> LambdaException
 tyMismatchError expected actual
   = TyMismatchError
   $ "Couldn't match expected type "

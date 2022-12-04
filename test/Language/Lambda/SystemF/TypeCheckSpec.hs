@@ -13,7 +13,7 @@ import Test.Hspec
 tc
   :: [Text]
   -> [(Text, Ty Text)]
-  -> SystemFExpr Text Text
+  -> SystemFExpr Text
   -> Either LambdaException (Ty Text)
 tc uniqs ctx expr = execTypecheck (typecheck expr) (TypecheckState (fromList ctx) uniqs)
 

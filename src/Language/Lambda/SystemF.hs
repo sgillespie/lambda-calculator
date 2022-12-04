@@ -18,10 +18,10 @@ import RIO
 import qualified RIO.Text as Text
 import qualified Data.Map as Map
 
-type Globals = Map.Map Text (SystemFExpr Text Text)
+type Globals = Map.Map Text (SystemFExpr Text)
 
 data Result name = Result
-  { expr :: SystemFExpr name name,
+  { expr :: SystemFExpr name,
     ty :: Ty name
   } deriving (Eq, Show)
 

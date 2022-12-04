@@ -8,7 +8,7 @@ import Language.Lambda.SystemF.Expression
 
 spec :: Spec
 spec = describe "prettyPrint" $ do
-  let prettyPrint' :: SystemFExpr Text Text -> Text
+  let prettyPrint' :: SystemFExpr Text -> Text
       prettyPrint' = prettyPrint
 
       prettyPrintTy :: Ty Text -> Text

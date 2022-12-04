@@ -13,39 +13,39 @@ import Text.Parsec.Text
 
 import Language.Lambda.SystemF.Expression
 
-parseExpr :: Text -> Either ParseError (SystemFExpr Text Text)
+parseExpr :: Text -> Either ParseError (SystemFExpr Text)
 parseExpr = parse (whitespace *> expr <* eof) ""
 
 parseType :: Text -> Either ParseError (Ty Text)
 parseType = parse (whitespace *> ty <* eof) ""
 
 -- Parse expressions
-expr :: Parser (SystemFExpr Text Text)
+expr :: Parser (SystemFExpr Text)
 expr = try tyapp <|> try app <|> term
 
-app :: Parser (SystemFExpr Text Text)
+app :: Parser (SystemFExpr Text)
 app = chainl1 term (return App)
 
-tyapp :: Parser (SystemFExpr Text Text)
+tyapp :: Parser (SystemFExpr Text)
 tyapp = TyApp
       <$> term
       <*> ty'
   where ty' = symbol '[' *> ty <* symbol ']'
 
-term :: Parser (SystemFExpr Text Text)
+term :: Parser (SystemFExpr Text)
 term = try abs <|> tyabs <|> var <|> parens expr
 
-var :: Parser (SystemFExpr Text Text)
+var :: Parser (SystemFExpr Text)
 var = Var <$> exprId
 
-abs :: Parser (SystemFExpr Text Text)
+abs :: Parser (SystemFExpr Text)
 abs = curry'
     <$> (symbol '\\' *> many1 args <* symbol '.') 
     <*> expr
   where args = (,) <$> (exprId <* symbol ':') <*> ty
         curry' = flip . foldr . uncurry $ Abs
 
-tyabs :: Parser (SystemFExpr Text Text)
+tyabs :: Parser (SystemFExpr Text)
 tyabs = curry' <$> args <*> expr
   where args = symbol '\\' *> many1 typeId <* symbol '.'
         curry' = flip (foldr TyAbs)

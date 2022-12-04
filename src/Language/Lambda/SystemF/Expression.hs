@@ -10,17 +10,17 @@ import Prettyprinter
 import Prettyprinter.Render.Text (renderStrict)
 import RIO
 
-data SystemFExpr name ty
+data SystemFExpr name
   -- | Variable: `x`
   = Var name
   -- | Function application: `x y`
-  | App (SystemFExpr name ty) (SystemFExpr name ty)
+  | App (SystemFExpr name) (SystemFExpr name)
   -- | Lambda abstraction: `\x: X. x`
-  | Abs name (Ty ty) (SystemFExpr name ty)
+  | Abs name (Ty name) (SystemFExpr name)
   -- | Type Abstraction: `\X. body`
-  | TyAbs ty (SystemFExpr name ty)                  
+  | TyAbs name (SystemFExpr name)
   -- | Type Application: `x [X]`
-  | TyApp (SystemFExpr name ty) (Ty ty)
+  | TyApp (SystemFExpr name) (Ty name)
   deriving (Eq, Show)
 
 data Ty name
@@ -29,7 +29,7 @@ data Ty name
   | TyForAll name (Ty name)     -- ^ Universal type (forall T. X)
   deriving (Eq, Show)
 
-instance (Pretty name, Pretty ty) => Pretty (SystemFExpr name ty) where
+instance (Pretty name) => Pretty (SystemFExpr name) where
   pretty (Var name) = pretty name
   pretty (App e1 e2) = prettyApp e1 e2
   pretty (Abs name ty body) = prettyAbs name ty body
@@ -47,9 +47,9 @@ upperLambda :: Char
 upperLambda = 'Λ'
 
 prettyApp
-  :: (Pretty name, Pretty ty)
-  => SystemFExpr name ty
-  -> SystemFExpr name ty
+  :: Pretty name
+  => SystemFExpr name
+  -> SystemFExpr name
   -> Doc a
 prettyApp e1@Abs{} e2@Abs{} = parens (pretty e1) <+> parens (pretty e2)
 prettyApp e1@Abs{} e2 = parens (pretty e1) <+> pretty e2
@@ -58,10 +58,10 @@ prettyApp e1 e2@App{} = pretty e1 <+> parens (pretty e2)
 prettyApp e1 e2 = pretty e1 <+> pretty e2
 
 prettyAbs
-  :: (Pretty name, Pretty ty)
+  :: Pretty name
   => name
-  -> Ty ty
-  -> SystemFExpr name ty
+  -> Ty name
+  -> SystemFExpr name
   -> Doc ann
 prettyAbs name ty body
   = lambda
@@ -70,11 +70,11 @@ prettyAbs name ty body
     <+> pretty body'
   where (names, body') = uncurryAbs name ty body
 
-prettyTyAbs :: (Pretty name, Pretty ty) => ty -> SystemFExpr name ty -> Doc ann
+prettyTyAbs :: (Pretty name) => name -> SystemFExpr name -> Doc ann
 prettyTyAbs name body = upperLambda' <+> hsep (map pretty names) <> dot
     <+> pretty body'
   where (names, body') = uncurryTyAbs name body
-prettyTyApp :: (Pretty name, Pretty ty) => SystemFExpr name ty -> Ty ty -> Doc ann
+prettyTyApp :: (Pretty name) => SystemFExpr name -> Ty name -> Doc ann
 prettyTyApp expr ty = pretty expr <+> brackets (pretty ty)
 
 prettyTy :: Pretty name => Bool -> Ty name -> Doc ann
@@ -113,12 +113,12 @@ prettyTyArrow' compact doc1 doc2 = doc1 `add'` "->" `add'` doc2
           | compact = (<>) 
           | otherwise = (<+>)
 
-uncurryAbs :: n -> Ty t -> SystemFExpr n t -> ([(n, Ty t)], SystemFExpr n t)
+uncurryAbs :: n -> Ty n -> SystemFExpr n -> ([(n, Ty n)], SystemFExpr n)
 uncurryAbs name ty = uncurry' [(name, ty)] 
   where uncurry' ns (Abs n' t' body') = uncurry' ((n', t'):ns) body'
         uncurry' ns body'             = (reverse ns, body')
 
-uncurryTyAbs :: t -> SystemFExpr n t -> ([t], SystemFExpr n t)
+uncurryTyAbs :: n -> SystemFExpr n -> ([n], SystemFExpr n)
 uncurryTyAbs ty = uncurry' [ty]
   where uncurry' ts (TyAbs t' body') = uncurry' (t':ts) body'
         uncurry' ts body'            = (reverse ts, body')
