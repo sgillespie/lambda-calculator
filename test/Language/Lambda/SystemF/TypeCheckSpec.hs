@@ -1,15 +1,20 @@
 module Language.Lambda.SystemF.TypeCheckSpec (spec) where
 
-import Data.Either
-import Data.Map
-import Prettyprinter
-import Test.Hspec
-
 import Language.Lambda.Shared.Errors
 import Language.Lambda.SystemF.Expression
 import Language.Lambda.SystemF.State
 import Language.Lambda.SystemF.TypeCheck
 
+import Data.Either
+import Data.Map
+import RIO
+import Test.Hspec
+
+tc
+  :: [Text]
+  -> [(Text, Ty Text)]
+  -> SystemFExpr Text Text
+  -> Either LambdaException (Ty Text)
 tc uniqs ctx expr = execTypecheck (typecheck expr) (TypecheckState (fromList ctx) uniqs)
 
 spec :: Spec

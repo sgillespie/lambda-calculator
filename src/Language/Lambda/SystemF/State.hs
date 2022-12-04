@@ -83,7 +83,7 @@ modifyUniques :: ([name] -> [name]) -> Typecheck name ()
 modifyUniques f = modify $ uniques %~ f
 
 setUniques :: [name] -> Typecheck name ()
-setUniques uniques' = modify (& uniques .~ uniques')
+setUniques uniques' = modify $ uniques .~ uniques'
 
 setContext :: Context name -> Typecheck name ()
-setContext context' = modify (& context .~ context')
+setContext context' = modify $ context .~ context'

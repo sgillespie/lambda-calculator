@@ -47,6 +47,8 @@ default-extensions:
   - MultiParamTypeClasses
   - MultiWayIf
   - NamedFieldPuns
+  - NoImplicitPrelude
+  - OverloadedStrings
   - PartialTypeSignatures
   - PatternGuards
   - PolyKinds
@@ -74,9 +76,6 @@ library:
     - Language.Lambda.SystemF.Parser
     - Language.Lambda.SystemF.State
     - Language.Lambda.SystemF.TypeCheck
-  default-extensions:
-    - NoImplicitPrelude
-    - OverloadedStrings
   dependencies:
     - containers
     - parsec
@@ -85,9 +84,6 @@ executables:
   lambda-calculator:
     main: Main.hs
     source-dirs: app
-    default-extensions:
-      - NoImplicitPrelude
-      - OverloadedStrings
     dependencies:
       - bytestring
       - containers
@@ -122,7 +118,5 @@ tests:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
-    default-extensions:
-      - ImplicitPrelude
     dependencies:
       - hlint

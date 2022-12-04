@@ -1,8 +1,7 @@
 module Language.Lambda.SystemFSpec where
 
+import RIO
 import Test.Hspec
-
-import Language.Lambda.SystemF
 
 spec :: Spec
 spec = describe "evalString" $ 

@@ -1,18 +1,18 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.7.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 089fe9b55bbab6cbfceb1623b5f1eb4f8c706b39fa51ad2d87957cefea80301c
+-- hash: ad20f295524a537b492ae5b1ce5f4de1f28915473244157141a542142f1fd548
 
 name:           lambda-calculator
-version:        3.0.0
+version:        3.0.0.1
 synopsis:       A lambda calculus interpreter
-description:    Please see README.md
+description:    A simple implementation of the Untyped Lambda Calculus
 category:       LambdaCalculus,Language,Teaching
-homepage:       https://github.com/sgillespie/lambda-calculus#readme
-bug-reports:    https://github.com/sgillespie/lambda-calculus/issues
+homepage:       https://github.com/sgillespie/lambda-calculator#readme
+bug-reports:    https://github.com/sgillespie/lambda-calculator/issues
 author:         Sean D Gillespie
 maintainer:     sean@mistersg.net
 copyright:      2016 Sean Gillespie
@@ -22,7 +22,7 @@ build-type:     Simple
 
 source-repository head
   type: git
-  location: https://github.com/sgillespie/lambda-calculus
+  location: https://github.com/sgillespie/lambda-calculator
 
 library
   exposed-modules:
@@ -67,6 +67,8 @@ library
       MultiParamTypeClasses
       MultiWayIf
       NamedFieldPuns
+      NoImplicitPrelude
+      OverloadedStrings
       PartialTypeSignatures
       PatternGuards
       PolyKinds
@@ -78,8 +80,6 @@ library
       TypeFamilies
       TypeSynonymInstances
       ViewPatterns
-      NoImplicitPrelude
-      OverloadedStrings
   ghc-options: -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.9 && <5
@@ -125,6 +125,8 @@ executable lambda-calculator
       MultiParamTypeClasses
       MultiWayIf
       NamedFieldPuns
+      NoImplicitPrelude
+      OverloadedStrings
       PartialTypeSignatures
       PatternGuards
       PolyKinds
@@ -136,8 +138,6 @@ executable lambda-calculator
       TypeFamilies
       TypeSynonymInstances
       ViewPatterns
-      NoImplicitPrelude
-      OverloadedStrings
   ghc-options: -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.9 && <5
@@ -181,6 +181,8 @@ test-suite lambda-calculus-lint
       MultiParamTypeClasses
       MultiWayIf
       NamedFieldPuns
+      NoImplicitPrelude
+      OverloadedStrings
       PartialTypeSignatures
       PatternGuards
       PolyKinds
@@ -192,7 +194,6 @@ test-suite lambda-calculus-lint
       TypeFamilies
       TypeSynonymInstances
       ViewPatterns
-      ImplicitPrelude
   ghc-options: -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.9 && <5
@@ -245,6 +246,8 @@ test-suite lambda-calculus-test
       MultiParamTypeClasses
       MultiWayIf
       NamedFieldPuns
+      NoImplicitPrelude
+      OverloadedStrings
       PartialTypeSignatures
       PatternGuards
       PolyKinds

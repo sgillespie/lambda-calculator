@@ -108,7 +108,6 @@ substituteTy _ name t2@(TyForAll name' t2')
   | name == name' = t2
   | otherwise     = TyForAll name' (substituteTy t2 name t2')
 
-
 tyMismatchError
   :: (Pretty t1, Pretty t2)
   => t1
