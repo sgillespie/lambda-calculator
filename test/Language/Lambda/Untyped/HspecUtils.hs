@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 module Language.Lambda.Untyped.HspecUtils where
 
 import RIO

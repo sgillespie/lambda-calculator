@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
 module Language.Lambda.Untyped (
   evalText,
   runEvalText,
