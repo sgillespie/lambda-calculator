@@ -1,7 +1,6 @@
 module Language.Lambda.SystemF.HspecUtils where
 
 import RIO
-import RIO.Text (toUpper)
 import Test.Hspec
 
 import Language.Lambda.Shared.Errors
@@ -11,8 +10,8 @@ shouldEvalTo :: Text -> Text -> Expectation
 shouldEvalTo s = shouldBe (eval s) . eval
 
 eval :: Text -> Either LambdaException (Result Text)
-eval input = execTypecheck (evalText input) (mkTypecheckState uniqs)
-  where uniqs = map toUpper defaultUniques
+eval input = execTypecheck (evalText input) initialState
+  where initialState = mkTypecheckState defaultUniques defaultTyUniques
 
 shouldBeRight
   :: (Show l, Show r, Eq l, Eq r)

@@ -17,36 +17,46 @@ typecheck
   :: (Ord name, Pretty name)
   => SystemFExpr name
   -> Typecheck name (Ty name)
-typecheck (Var v) = typecheckVar v
-typecheck (Abs n t body) = typecheckAbs n t body
-typecheck (App e1 e2) = typecheckApp e1 e2
-typecheck (TyAbs t body) = typecheckTyAbs t body
-typecheck (TyApp e ty) = typecheckTyApp e ty
+typecheck expr = do
+  ctx <- getContext
+  typecheck' ctx expr
 
-typecheckVar :: Ord name => name -> Typecheck name (Ty name)
-typecheckVar var = getContext >>= defaultToFreshTyVar . Map.lookup var
-  where defaultToFreshTyVar (Just v) = return v
-        defaultToFreshTyVar Nothing = TyVar <$> unique
+typecheck'
+  :: (Ord name, Pretty name)
+  => Context name
+  -> SystemFExpr name
+  -> Typecheck name (Ty name)
+typecheck' ctx (Var v) = typecheckVar ctx v
+typecheck' ctx (Abs n t body) = typecheckAbs ctx n t body
+typecheck' ctx (App e1 e2) = typecheckApp ctx e1 e2
+typecheck' ctx (TyAbs t body) = typecheckTyAbs ctx t body
+typecheck' ctx (TyApp e ty) = typecheckTyApp ctx e ty
+
+typecheckVar :: Ord name => Context name -> name -> Typecheck name (Ty name)
+typecheckVar ctx var = defaultToFreshTyVar (Map.lookup var ctx)
+  where defaultToFreshTyVar (Just v) = pure v
+        defaultToFreshTyVar Nothing = TyVar <$> tyUnique
 
 typecheckAbs
   :: (Ord name, Pretty name)
-  => name
+  => Context name
+  -> name
   -> Ty name
   -> SystemFExpr name
   -> Typecheck name (Ty name)
-typecheckAbs name ty body
-  = modifyContext (Map.insert name ty)
-    >> TyArrow ty <$> typecheck body
+typecheckAbs ctx name ty body = TyArrow ty <$> typecheck' ctx' body
+  where ctx' = Map.insert name ty ctx
 
 typecheckApp
   :: (Ord name, Pretty name)
-  => SystemFExpr name
+  => Context name
+  -> SystemFExpr name
   -> SystemFExpr name
   -> Typecheck name (Ty name)
-typecheckApp e1 e2 = do
+typecheckApp ctx e1 e2 = do
   -- Typecheck expressions
-  t1 <- typecheck e1
-  t2 <- typecheck e2
+  t1 <- typecheck' ctx e1
+  t2 <- typecheck' ctx e2
 
   -- Verify the type of t1 is an Arrow
   (t1AppInput, t1AppOutput) <- case t1 of
@@ -60,25 +70,26 @@ typecheckApp e1 e2 = do
 
 typecheckTyAbs
   :: (Ord name, Pretty name)
-  => name
+  => Context name
+  -> name
   -> SystemFExpr name
   -> Typecheck name (Ty name)
-typecheckTyAbs ty body
-  = modifyContext (Map.insert ty (TyVar ty))
-    >> TyForAll ty <$> typecheck body
+typecheckTyAbs ctx ty body = TyForAll ty <$> typecheck' ctx' body
+  where ctx' = Map.insert ty (TyVar ty) ctx
 
 typecheckTyApp
   :: (Ord name, Pretty name)
-  => SystemFExpr name
+  => Context name
+  -> SystemFExpr name
   -> Ty name
   -> Typecheck name (Ty name)
-typecheckTyApp (TyAbs t expr) ty = typecheck $ substitute ty t expr
-typecheckTyApp expr _ = typecheck expr
+typecheckTyApp ctx (TyAbs t expr) ty = typecheck' ctx $ substitute ty t expr
+typecheckTyApp ctx expr _ = typecheck' ctx expr
 
-unique :: Typecheck name name
-unique = getUniques >>= fromJust' . List.headMaybe
-  where fromJust' (Just u) = return u
-        fromJust' Nothing = throwError ImpossibleError
+tyUnique :: Typecheck name name
+tyUnique = getTyUniques >>= tyUnique'
+    where tyUnique' (u:us) = setTyUniques us $> u
+          tyUnique' _ = throwError ImpossibleError
 
 substitute
   :: Eq n

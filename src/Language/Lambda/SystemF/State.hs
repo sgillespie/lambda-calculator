@@ -7,14 +7,18 @@ module Language.Lambda.SystemF.State
     unsafeRunTypecheck,
     unsafeExecTypecheck,
     mkTypecheckState,
-    context,
-    uniques,
+    _context,
+    _varUniques,
+    _tyUniques,
     getContext,
-    getUniques,
+    getVarUniques,
+    getTyUniques,
     modifyContext,
-    modifyUniques,
+    modifyVarUniques,
+    modifyTyUniques,
     setContext,
-    setUniques
+    setVarUniques,
+    setTyUniques
   ) where
 
 import Language.Lambda.Shared.Errors (LambdaException(..))
@@ -27,7 +31,8 @@ import qualified RIO.Map as Map
 
 data TypecheckState name = TypecheckState
   { tsContext :: Context name,
-    tsUniques :: [name]
+    tsVarUniques :: [name],  -- ^ A unique supply of term-level variables
+    tsTyUniques :: [name] -- ^ A unique supply of type-level variables
   }
 
 type Typecheck name
@@ -59,31 +64,44 @@ unsafeExecTypecheck :: Typecheck name result -> TypecheckState name -> result
 unsafeExecTypecheck computation state' = either impureThrow id tcResult
   where tcResult = execTypecheck computation state'
 
-mkTypecheckState :: [name] -> TypecheckState name
+mkTypecheckState :: [name] -> [name] -> TypecheckState name
 mkTypecheckState = TypecheckState Map.empty
 
-uniques :: Lens' (TypecheckState name) [name]
-uniques f state' = (\uniques' -> state' { tsUniques = uniques' })
-  <$> f (tsUniques state')
-
-context :: Lens' (TypecheckState name) (Context name)
-context f state' = (\context' -> state' { tsContext = context' })
+_context :: Lens' (TypecheckState name) (Context name)
+_context f state' = (\context' -> state' { tsContext = context' })
   <$> f (tsContext state')
 
-getUniques :: Typecheck name [name]
-getUniques = gets (^. uniques)
+_varUniques :: Lens' (TypecheckState name) [name]
+_varUniques f state' = (\uniques' -> state' { tsVarUniques = uniques' })
+  <$> f (tsVarUniques state')
+
+_tyUniques :: Lens' (TypecheckState name) [name]
+_tyUniques f state' = (\uniques' -> state' { tsTyUniques = uniques' })
+  <$> f (tsTyUniques state')
+
+getVarUniques :: Typecheck name [name]
+getVarUniques = gets (^. _varUniques)
+
+getTyUniques :: Typecheck name [name]
+getTyUniques = gets (^. _tyUniques)
 
 getContext :: Typecheck name (Context name)
-getContext = gets (^. context)
+getContext = gets (^. _context)
 
 modifyContext :: (Context name -> Context name) -> Typecheck name ()
-modifyContext f = modify $ context %~ f
+modifyContext f = modify $ _context %~ f
 
-modifyUniques :: ([name] -> [name]) -> Typecheck name ()
-modifyUniques f = modify $ uniques %~ f
+modifyVarUniques :: ([name] -> [name]) -> Typecheck name ()
+modifyVarUniques f = modify $ _varUniques %~ f
 
-setUniques :: [name] -> Typecheck name ()
-setUniques uniques' = modify $ uniques .~ uniques'
+modifyTyUniques :: ([name] -> [name]) -> Typecheck name ()
+modifyTyUniques f = modify $ _tyUniques %~ f
+
+setVarUniques :: [name] -> Typecheck name ()
+setVarUniques uniques' = modify $ _varUniques .~ uniques'
+
+setTyUniques :: [name] -> Typecheck name ()
+setTyUniques uniques' = modify $ _tyUniques .~ uniques'
 
 setContext :: Context name -> Typecheck name ()
-setContext context' = modify $ context .~ context'
+setContext context' = modify $ _context .~ context'

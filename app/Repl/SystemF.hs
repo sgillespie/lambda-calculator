@@ -23,7 +23,7 @@ runSystemFRepl :: IO ()
 runSystemFRepl
   = void . runExceptT . evalStateT (evalReplOpts replOpts) $ initialState
   where replOpts = mkReplOpts banner' $ evalSystemF . pack
-        initialState = mkTypecheckState defaultUniques
+        initialState = mkTypecheckState defaultUniques defaultTyUniques
 
 banner' :: MultiLine -> Repl String
 banner' _ = unpack <$> prompt (singleton upperLambda)

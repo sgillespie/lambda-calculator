@@ -5,6 +5,7 @@ module Language.Lambda.SystemF (
   _ty,
   evalText,
   defaultUniques,
+  defaultTyUniques,
 
   module Language.Lambda.SystemF.Expression,
   module Language.Lambda.SystemF.Parser,
@@ -47,3 +48,6 @@ evalText text = do
   case parseExpr text of
     Left err -> throwError $ ParseError $ Text.pack $ show err
     Right res -> Result res <$> typecheck res
+
+defaultTyUniques :: [Text]
+defaultTyUniques = map Text.toUpper defaultUniques
