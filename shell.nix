@@ -17,5 +17,5 @@ in
 haskell.lib.buildStackProject {
   inherit ghc;
   name = "myEnv";
-  buildInputs = [];
+  buildInputs = [nixpkgs.zlib];
 }
