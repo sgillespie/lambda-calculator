@@ -11,6 +11,7 @@ github: sgillespie/lambda-calculator
 
 dependencies:
   - base >= 4.9 && < 5
+  - microlens
   - mtl
   - prettyprinter
   - rio

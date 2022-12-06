@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ad20f295524a537b492ae5b1ce5f4de1f28915473244157141a542142f1fd548
+-- hash: 400aa6d08f1de06aad871df99e69585b0f5438838d7c7ac155ba9984a9ef843b
 
 name:           lambda-calculator
 version:        3.0.0.1
@@ -84,6 +84,7 @@ library
   build-depends:
       base >=4.9 && <5
     , containers
+    , microlens
     , mtl
     , parsec
     , prettyprinter
@@ -144,6 +145,7 @@ executable lambda-calculator
     , bytestring
     , containers
     , lambda-calculator
+    , microlens
     , mtl
     , optparse-applicative
     , prettyprinter
@@ -198,6 +200,7 @@ test-suite lambda-calculus-lint
   build-depends:
       base >=4.9 && <5
     , hlint
+    , microlens
     , mtl
     , prettyprinter
     , rio
@@ -208,6 +211,7 @@ test-suite lambda-calculus-test
   main-is: Spec.hs
   other-modules:
       Language.Lambda.SystemF.ExpressionSpec
+      Language.Lambda.SystemF.HspecUtils
       Language.Lambda.SystemF.ParserSpec
       Language.Lambda.SystemF.TypeCheckSpec
       Language.Lambda.SystemFSpec
@@ -266,6 +270,7 @@ test-suite lambda-calculus-test
     , containers
     , hspec
     , lambda-calculator
+    , microlens
     , mtl
     , prettyprinter
     , rio
