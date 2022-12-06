@@ -13,7 +13,6 @@ import qualified RIO.Map as Map
 type UniqueSupply n = [n]
 type Context' n t = Map n t
 
--- TODO: name/ty different types
 typecheck
   :: (Ord name, Pretty name)
   => SystemFExpr name
@@ -52,7 +51,7 @@ typecheckApp e1 e2 = do
   -- Verify the type of t1 is an Arrow
   (t1AppInput, t1AppOutput) <- case t1 of
     (TyArrow appInput appOutput) -> return (appInput, appOutput)
-    t1' -> throwError $ tyMismatchError t1' t1
+    _ -> throwError $ tyMismatchError (TyArrow t2 t1) t1
 
   -- Verify the output of e1 matches the type of e2
   if t1AppInput == t2

@@ -34,7 +34,7 @@ evalSystemF input = do
 
   let res = runTypecheck (evalText input) state'
   case res of
-    Left err -> liftIO . putStrLn . pack . show $ err
+    Left err -> liftIO . putStrLn . textDisplay $ err
     Right (res', newState) -> do
       put newState
       liftIO . putStrLn . prettyPrint $ res'

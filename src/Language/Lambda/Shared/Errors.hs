@@ -38,6 +38,7 @@ instance Exception LambdaException
 instance Display LambdaException where
   textDisplay (ParseError txt) = "Parse error " <> txt
   textDisplay (InvalidLet txt) = "Illegal nested let: " <> txt
+  textDisplay (TyMismatchError txt) = "Type error: " <> txt
   textDisplay ImpossibleError = "An impossible error occurred! Please file a bug."
 
 instance Show LambdaException where
