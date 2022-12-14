@@ -9,7 +9,7 @@ import Language.Lambda.SystemF
 shouldEvalTo :: Text -> Text -> Expectation
 shouldEvalTo s = shouldBe (eval s) . eval
 
-eval :: Text -> Either LambdaException (Result Text)
+eval :: Text -> Either LambdaException (TypedExpr Text)
 eval input = execTypecheck (evalText input) initialState
   where initialState = mkTypecheckState defaultUniques defaultTyUniques
 

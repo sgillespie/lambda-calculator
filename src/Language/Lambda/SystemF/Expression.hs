@@ -1,6 +1,9 @@
 module Language.Lambda.SystemF.Expression
   ( SystemFExpr(..),
+    TypedExpr(..),
     Ty(..),
+    _expr,
+    _ty,
     prettyPrint,
     upperLambda
   ) where
@@ -23,6 +26,11 @@ data SystemFExpr name
   | TyApp (SystemFExpr name) (Ty name)
   deriving (Eq, Show)
 
+data TypedExpr name = TypedExpr
+  { teExpr :: SystemFExpr name,
+    teTy :: Ty name
+  } deriving (Eq, Show)
+
 data Ty name
   = TyVar name                  -- ^ Type variable (T)
   | TyArrow (Ty name) (Ty name) -- ^ Type arrow    (T -> U)
@@ -36,8 +44,17 @@ instance (Pretty name) => Pretty (SystemFExpr name) where
   pretty (TyAbs ty body) = prettyTyAbs ty body
   pretty (TyApp expr ty) = prettyTyApp expr ty
 
+instance Pretty name => Pretty (TypedExpr name) where
+  pretty expr = pretty (expr ^. _expr) <+> colon <+> pretty (expr ^. _ty)
+
 instance Pretty name => Pretty (Ty name) where
   pretty = prettyTy False
+
+_expr :: Lens' (TypedExpr name) (SystemFExpr name)
+_expr = lens teExpr (\res expr -> res { teExpr = expr })
+
+_ty :: Lens' (TypedExpr name) (Ty name)
+_ty = lens teTy (\res ty -> res { teTy = ty })
 
 prettyPrint :: Pretty pretty => pretty -> Text
 prettyPrint expr = renderStrict docStream

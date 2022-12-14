@@ -1,8 +1,5 @@
 module Language.Lambda.SystemF (
   Globals(),
-  Result(..),
-  _expr,
-  _ty,
   evalText,
   runEvalText,
   execEvalText,
@@ -24,50 +21,35 @@ import Language.Lambda.SystemF.State
 import Language.Lambda.SystemF.TypeCheck
 
 import Control.Monad.Except
-import Prettyprinter
 import RIO
 import qualified RIO.Text as Text
 import qualified Data.Map as Map
 
-type Globals name = Map.Map name (Result name)
-
-data Result name = Result
-  { expr :: SystemFExpr name,
-    ty :: Ty name
-  } deriving (Eq, Show)
-
-_expr :: Lens' (Result name) (SystemFExpr name)
-_expr = lens expr (\res expr -> res { expr = expr })
-
-_ty :: Lens' (Result name) (Ty name)
-_ty = lens ty (\res ty -> res { ty = ty })
-
-instance Pretty name => Pretty (Result name) where
-  pretty Result{..} = pretty expr <+> colon <+> pretty ty
+type Globals name = Map.Map name (TypedExpr name)
 
 evalText
   :: Text
-  -> Typecheck Text (Result Text)
+  -> Typecheck Text (TypedExpr Text)
 evalText = either throwParseError typecheckExpr . parseExpr
     where throwParseError = throwError . ParseError . Text.pack . show
-          typecheckExpr expr = Result expr <$> typecheck expr
+          typecheckExpr expr = TypedExpr expr <$> typecheck expr
 
 runEvalText
   :: Text
   -> Globals Text
-  -> Either LambdaException (Result Text, TypecheckState Text)
+  -> Either LambdaException (TypedExpr Text, TypecheckState Text)
 runEvalText input globals' = runTypecheck (evalText input) (mkState globals')
 
 execEvalText
   :: Text
   -> Globals Text
-  -> Either LambdaException (Result Text)
+  -> Either LambdaException (TypedExpr Text)
 execEvalText input globals' = execTypecheck (evalText input) (mkState globals')
 
 unsafeExecEvalText
   :: Text
   -> Globals Text
-  -> Result Text
+  -> TypedExpr Text
 unsafeExecEvalText input globals' = unsafeExecTypecheck (evalText input) (mkState globals')
 
 defaultTyUniques :: [Text]
