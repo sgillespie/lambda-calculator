@@ -16,6 +16,8 @@ import RIO
 data SystemFExpr name
   -- | Variable: `x`
   = Var name
+  -- | Variable annotated with type: `x:T`
+  | VarAnn name (Ty name)
   -- | Function application: `x y`
   | App (SystemFExpr name) (SystemFExpr name)
   -- | Lambda abstraction: `\x: X. x`
@@ -39,6 +41,7 @@ data Ty name
 
 instance (Pretty name) => Pretty (SystemFExpr name) where
   pretty (Var name) = pretty name
+  pretty (VarAnn name ty) = prettyVarAnn name ty
   pretty (App e1 e2) = prettyApp e1 e2
   pretty (Abs name ty body) = prettyAbs name ty body
   pretty (TyAbs ty body) = prettyTyAbs ty body
@@ -62,6 +65,11 @@ prettyPrint expr = renderStrict docStream
 
 upperLambda :: Char
 upperLambda = 'Λ'
+
+prettyVarAnn :: Pretty name => name -> Ty name -> Doc a
+prettyVarAnn var ty = pretty var <> colon <> prettyTy' ty
+  where prettyTy' (TyVar _) = prettyTy True ty
+        prettyTy' _ = parens $ prettyTy True ty
 
 prettyApp
   :: Pretty name

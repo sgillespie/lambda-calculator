@@ -17,6 +17,9 @@ spec = describe "prettyPrint" $ do
   it "prints simple variables" $
     prettyPrint' (Var "x") `shouldBe` "x"
 
+  it "prints annotated variables" $
+    prettyPrint' (VarAnn "x" (TyVar "T")) `shouldBe` "x:T"
+
   it "prints simple applications" $
     prettyPrint' (App (Var "a") (Var "b")) `shouldBe` "a b"
 
@@ -28,6 +31,9 @@ spec = describe "prettyPrint" $ do
 
   it "prints simple type applications" $ 
     prettyPrint' (TyApp (Var "t") (TyVar "T")) `shouldBe` "t [T]"
+
+  it "prints annotated variables with composite types" $
+    prettyPrint' (VarAnn "x" (TyArrow (TyVar "T") (TyVar "V"))) `shouldBe` "x:(T->V)"
 
   it "prints nested abstractions" $
     prettyPrint' (Abs "f" (TyVar "F") (Abs "x" (TyVar "X") (Var "x")))

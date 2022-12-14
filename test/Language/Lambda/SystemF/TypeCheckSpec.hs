@@ -36,6 +36,14 @@ spec = describe "typecheck" $ do
   it "typechecks simple variables not in context" $ 
     tc' ["A"] [] (Var "x") `shouldBe` Right (TyVar "A")
 
+  it "typechecks annotated variables in context" $
+    tc' [] [("x", TyVar "X")] (VarAnn "x" (TyVar "X"))
+      `shouldBe` Right (TyVar "X")
+
+  it "typechecks annotated variables in context" $
+    tc' [] [] (VarAnn "x" (TyVar "X"))
+      `shouldBe` Right (TyVar "X")
+
   it "typechecks simple abstractions" $
     tc' [] [] (Abs "x" (TyVar "A") (Var "x")) 
       `shouldBe` Right (TyArrow (TyVar "A") (TyVar "A"))
@@ -53,6 +61,22 @@ spec = describe "typecheck" $ do
           ]
 
     tc' [] ctx (App (Var "f") (Var "a")) `shouldBe` Right (TyVar "U")
+
+  it "typechecks application of annotated variables" $ do
+    let f = VarAnn "f" (TyArrow (TyVar "T") (TyVar "T"))
+        x = VarAnn "x" (TyVar "T")
+    
+    tc' [] [] (App f x) `shouldBe` Right (TyVar "T")
+
+  it "typechecks application of annotated variable to abstraction" $ do
+    let f = Abs "t" (TyVar "T")  (Var "t")
+        x = VarAnn "x" (TyVar "T")
+    
+    tc' [] [] (App f x) `shouldBe` Right (TyVar "T")
+
+  it "annotated variable with wrong type fails" $ 
+    tc' [] [("x", TyVar "T")] (VarAnn "x" (TyVar "X"))
+      `shouldSatisfy` isLeft
 
   it "apply variable to variable fails" $ do
     let ctx = [

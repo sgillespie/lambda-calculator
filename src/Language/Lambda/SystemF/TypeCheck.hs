@@ -26,6 +26,7 @@ typecheck'
   -> SystemFExpr name
   -> Typecheck name (Ty name)
 typecheck' ctx (Var v) = typecheckVar ctx v
+typecheck' ctx (VarAnn v ty) = typecheckVarAnn ctx v ty
 typecheck' ctx (Abs n t body) = typecheckAbs ctx n t body
 typecheck' ctx (App e1 e2) = typecheckApp ctx e1 e2
 typecheck' ctx (TyAbs t body) = typecheckTyAbs ctx t body
@@ -35,6 +36,17 @@ typecheckVar :: Ord name => Context name -> name -> Typecheck name (Ty name)
 typecheckVar ctx var = defaultToFreshTyVar (Map.lookup var ctx)
   where defaultToFreshTyVar (Just v) = pure v
         defaultToFreshTyVar Nothing = TyVar <$> tyUnique
+
+typecheckVarAnn
+  :: (Ord name, Pretty name)
+  => Context name
+  -> name
+  -> Ty  name
+  -> Typecheck name (Ty name)
+typecheckVarAnn ctx var ty = maybe (pure ty) checkContextType (Map.lookup var ctx)
+  where checkContextType ty'
+          | ty' == ty = pure ty
+          | otherwise = throwError $ tyMismatchError ty' ty
 
 typecheckAbs
   :: (Ord name, Pretty name)

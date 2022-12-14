@@ -36,7 +36,9 @@ term :: Parser (SystemFExpr Text)
 term = try abs <|> tyabs <|> var <|> parens expr
 
 var :: Parser (SystemFExpr Text)
-var = Var <$> exprId
+var = try varann <|> var'
+  where var' = Var <$> exprId
+        varann = VarAnn <$> (exprId <* symbol ':') <*> ty
 
 abs :: Parser (SystemFExpr Text)
 abs = curry'

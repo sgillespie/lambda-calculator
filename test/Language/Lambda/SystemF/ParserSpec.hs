@@ -15,6 +15,9 @@ spec = do
     it "parses simple variables" $
       parseExpr "x" `shouldBe` Right (Var "x")
 
+    it "parses annotated variables" $
+      parseExpr "x:T" `shouldBe` Right (VarAnn "x" (TyVar "T"))
+
     it "parses parenthesized variables" $
       parseExpr "(x)" `shouldBe` Right (Var "x")
 
