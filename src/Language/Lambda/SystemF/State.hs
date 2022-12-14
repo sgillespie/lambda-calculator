@@ -2,6 +2,7 @@ module Language.Lambda.SystemF.State
   ( TypecheckState(..),
     Typecheck(),
     Context(),
+    Globals(),
     runTypecheck,
     execTypecheck,
     unsafeRunTypecheck,
@@ -22,7 +23,7 @@ module Language.Lambda.SystemF.State
   ) where
 
 import Language.Lambda.Shared.Errors (LambdaException(..))
-import Language.Lambda.SystemF.Expression (Ty(..))
+import Language.Lambda.SystemF.Expression (Ty(..), TypedExpr(..))
 
 import Control.Monad.Except (Except(), runExcept)
 import RIO
@@ -40,6 +41,8 @@ type Typecheck name
       (Except LambdaException)
 
 type Context name = Map name (Ty name)
+
+type Globals name = Map name (TypedExpr name)
 
 runTypecheck
   :: Typecheck name result

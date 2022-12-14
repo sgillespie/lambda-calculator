@@ -1,12 +1,10 @@
 module Language.Lambda.SystemF (
-  Globals(),
   evalText,
   runEvalText,
   execEvalText,
   unsafeExecEvalText,
   defaultUniques,
   defaultTyUniques,
-
 
   module Language.Lambda.SystemF.Expression,
   module Language.Lambda.SystemF.Parser,
@@ -24,8 +22,6 @@ import Control.Monad.Except
 import RIO
 import qualified RIO.Text as Text
 import qualified Data.Map as Map
-
-type Globals name = Map.Map name (TypedExpr name)
 
 evalText
   :: Text
