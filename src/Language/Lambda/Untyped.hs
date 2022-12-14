@@ -24,9 +24,8 @@ import Language.Lambda.Untyped.Parser
 import Language.Lambda.Untyped.State
 
 evalText :: Text -> Eval Text (LambdaExpr Text)
-evalText = either throwParseError evalExpr' . parseExpr
+evalText = either throwParseError evalExpr . parseExpr
   where throwParseError = throwError . ParseError . Text.pack . show
-        evalExpr' = evalExpr
 
 runEvalText
   :: Text

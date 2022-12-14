@@ -4,8 +4,12 @@ module Language.Lambda.SystemF (
   _expr,
   _ty,
   evalText,
+  runEvalText,
+  execEvalText,
+  unsafeExecEvalText,
   defaultUniques,
   defaultTyUniques,
+
 
   module Language.Lambda.SystemF.Expression,
   module Language.Lambda.SystemF.Parser,
@@ -25,7 +29,7 @@ import RIO
 import qualified RIO.Text as Text
 import qualified Data.Map as Map
 
-type Globals name = Map.Map name (SystemFExpr name)
+type Globals name = Map.Map name (Result name)
 
 data Result name = Result
   { expr :: SystemFExpr name,
@@ -44,10 +48,31 @@ instance Pretty name => Pretty (Result name) where
 evalText
   :: Text
   -> Typecheck Text (Result Text)
-evalText text = do
-  case parseExpr text of
-    Left err -> throwError $ ParseError $ Text.pack $ show err
-    Right res -> Result res <$> typecheck res
+evalText = either throwParseError typecheckExpr . parseExpr
+    where throwParseError = throwError . ParseError . Text.pack . show
+          typecheckExpr expr = Result expr <$> typecheck expr
+
+runEvalText
+  :: Text
+  -> Globals Text
+  -> Either LambdaException (Result Text, TypecheckState Text)
+runEvalText input globals' = runTypecheck (evalText input) (mkState globals')
+
+execEvalText
+  :: Text
+  -> Globals Text
+  -> Either LambdaException (Result Text)
+execEvalText input globals' = execTypecheck (evalText input) (mkState globals')
+
+unsafeExecEvalText
+  :: Text
+  -> Globals Text
+  -> Result Text
+unsafeExecEvalText input globals' = unsafeExecTypecheck (evalText input) (mkState globals')
 
 defaultTyUniques :: [Text]
 defaultTyUniques = map Text.toUpper defaultUniques
+
+mkState :: Globals Text -> TypecheckState Text
+mkState globals' = TypecheckState context' defaultUniques defaultTyUniques
+  where context' = Map.map (^. _ty) globals'

@@ -7,7 +7,6 @@ import Language.Lambda.SystemF.State
 import Control.Monad.Except (MonadError(..))
 import Prettyprinter
 import RIO
-import qualified RIO.List as List
 import qualified RIO.Map as Map
 
 type UniqueSupply n = [n]
