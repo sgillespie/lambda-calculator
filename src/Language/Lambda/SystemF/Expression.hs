@@ -14,8 +14,10 @@ import Prettyprinter.Render.Text (renderStrict)
 import RIO
 
 data SystemFExpr name
+  -- | A global binding: `let x = y`
+  = Let name (SystemFExpr name)
   -- | Variable: `x`
-  = Var name
+  | Var name
   -- | Variable annotated with type: `x:T`
   | VarAnn name (Ty name)
   -- | Function application: `x y`
@@ -44,6 +46,7 @@ instance (Pretty name) => Pretty (SystemFExpr name) where
   pretty (VarAnn name ty) = prettyVarAnn name ty
   pretty (App e1 e2) = prettyApp e1 e2
   pretty (Abs name ty body) = prettyAbs name ty body
+  pretty (Let name expr) = prettyLet name expr
   pretty (TyAbs ty body) = prettyTyAbs ty body
   pretty (TyApp expr ty) = prettyTyApp expr ty
 
@@ -94,6 +97,9 @@ prettyAbs name ty body
     <> dot
     <+> pretty body'
   where (names, body') = uncurryAbs name ty body
+
+prettyLet :: Pretty name => name -> SystemFExpr name -> Doc ann
+prettyLet name expr = "let" <+> pretty name <+> equals <+> pretty expr
 
 prettyTyAbs :: (Pretty name) => name -> SystemFExpr name -> Doc ann
 prettyTyAbs name body = upperLambda' <+> hsep (map pretty names) <> dot

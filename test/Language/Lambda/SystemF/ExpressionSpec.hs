@@ -32,6 +32,9 @@ spec = describe "prettyPrint" $ do
   it "prints simple type applications" $ 
     prettyPrint' (TyApp (Var "t") (TyVar "T")) `shouldBe` "t [T]"
 
+  it "prints simple let expressions" $
+    prettyPrint' (Let "x" (Var "y")) `shouldBe` "let x = y"
+
   it "prints annotated variables with composite types" $
     prettyPrint' (VarAnn "x" (TyArrow (TyVar "T") (TyVar "V"))) `shouldBe` "x:(T->V)"
 

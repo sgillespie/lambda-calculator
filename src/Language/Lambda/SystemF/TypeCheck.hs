@@ -18,19 +18,36 @@ typecheck
   -> Typecheck name (Ty name)
 typecheck expr = do
   ctx <- getContext
-  typecheck' ctx expr
+  typecheckTopLevel ctx expr
 
-typecheck'
+typecheckTopLevel
   :: (Ord name, Pretty name)
   => Context name
   -> SystemFExpr name
   -> Typecheck name (Ty name)
-typecheck' ctx (Var v) = typecheckVar ctx v
-typecheck' ctx (VarAnn v ty) = typecheckVarAnn ctx v ty
-typecheck' ctx (Abs n t body) = typecheckAbs ctx n t body
-typecheck' ctx (App e1 e2) = typecheckApp ctx e1 e2
-typecheck' ctx (TyAbs t body) = typecheckTyAbs ctx t body
-typecheck' ctx (TyApp e ty) = typecheckTyApp ctx e ty
+typecheckTopLevel ctx (Let n expr) = typecheckLet ctx n expr
+typecheckTopLevel ctx expr = typecheckExpr ctx expr
+
+typecheckLet
+  :: (Pretty name, Ord name)
+  => Context name
+  -> name
+  -> SystemFExpr name
+  -> Typecheck name (Ty name)
+typecheckLet ctx _ = typecheckExpr ctx
+  
+typecheckExpr
+  :: (Ord name, Pretty name)
+  => Context name
+  -> SystemFExpr name
+  -> Typecheck name (Ty name)
+typecheckExpr ctx (Var v) = typecheckVar ctx v
+typecheckExpr ctx (VarAnn v ty) = typecheckVarAnn ctx v ty
+typecheckExpr ctx (Abs n t body) = typecheckAbs ctx n t body
+typecheckExpr ctx (App e1 e2) = typecheckApp ctx e1 e2
+typecheckExpr ctx (TyAbs t body) = typecheckTyAbs ctx t body
+typecheckExpr ctx (TyApp e ty) = typecheckTyApp ctx e ty
+typecheckExpr _ (Let _ _) = throwError ImpossibleError
 
 typecheckVar :: Ord name => Context name -> name -> Typecheck name (Ty name)
 typecheckVar ctx var = defaultToFreshTyVar (Map.lookup var ctx)
@@ -55,7 +72,7 @@ typecheckAbs
   -> Ty name
   -> SystemFExpr name
   -> Typecheck name (Ty name)
-typecheckAbs ctx name ty body = TyArrow ty <$> typecheck' ctx' body
+typecheckAbs ctx name ty body = TyArrow ty <$> typecheckExpr ctx' body
   where ctx' = Map.insert name ty ctx
 
 typecheckApp
@@ -66,8 +83,8 @@ typecheckApp
   -> Typecheck name (Ty name)
 typecheckApp ctx e1 e2 = do
   -- Typecheck expressions
-  t1 <- typecheck' ctx e1
-  t2 <- typecheck' ctx e2
+  t1 <- typecheckExpr ctx e1
+  t2 <- typecheckExpr ctx e2
 
   -- Verify the type of t1 is an Arrow
   (t1AppInput, t1AppOutput) <- case t1 of
@@ -79,13 +96,15 @@ typecheckApp ctx e1 e2 = do
     then return t1AppOutput
     else throwError $ tyMismatchError (TyArrow t2 t1AppOutput) (TyArrow t1 t1AppOutput)
 
+
+
 typecheckTyAbs
   :: (Ord name, Pretty name)
   => Context name
   -> name
   -> SystemFExpr name
   -> Typecheck name (Ty name)
-typecheckTyAbs ctx ty body = TyForAll ty <$> typecheck' ctx' body
+typecheckTyAbs ctx ty body = TyForAll ty <$> typecheckExpr ctx' body
   where ctx' = Map.insert ty (TyVar ty) ctx
 
 typecheckTyApp
@@ -94,8 +113,8 @@ typecheckTyApp
   -> SystemFExpr name
   -> Ty name
   -> Typecheck name (Ty name)
-typecheckTyApp ctx (TyAbs t expr) ty = typecheck' ctx $ substitute ty t expr
-typecheckTyApp ctx expr _ = typecheck' ctx expr
+typecheckTyApp ctx (TyAbs t expr) ty = typecheckExpr ctx $ substitute ty t expr
+typecheckTyApp ctx expr _ = typecheckExpr ctx expr
 
 tyUnique :: Typecheck name name
 tyUnique = getTyUniques >>= tyUnique'

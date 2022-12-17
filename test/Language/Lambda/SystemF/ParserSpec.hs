@@ -7,6 +7,7 @@ import RIO
 import Test.Hspec
 
 import Language.Lambda.SystemF.Expression
+import Language.Lambda.SystemF.HspecUtils
 import Language.Lambda.SystemF.Parser
 
 spec :: Spec
@@ -29,6 +30,11 @@ spec = do
 
     it "parses simple type applications" $ 
       parseExpr "x [T]" `shouldBe` Right (TyApp (Var "x") (TyVar "T"))
+
+    it "parses simple lets" $ do
+      parseExpr "let x = t" `shouldBeRight` Let "x" (Var "t")
+      parseExpr "let f = \\x: T. x" `shouldBeRight`
+        Let "f" (Abs "x" (TyVar "T") (Var "x"))
 
     it "parses nested abstractions" $
       parseExpr "\\a:A b:B. b" 
@@ -58,6 +64,9 @@ spec = do
 
     it "does not parse trailing errors" $
       parseExpr "x +" `shouldSatisfy` isLeft
+
+    it "does not parse misplaced lets" $
+      parseExpr "\\x: T. let y = x" `shouldSatisfy` isLeft
 
     it "ignores whitespace" $ do
       let exprs = [

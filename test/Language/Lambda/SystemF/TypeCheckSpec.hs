@@ -62,6 +62,9 @@ spec = describe "typecheck" $ do
 
     tc' [] ctx (App (Var "f") (Var "a")) `shouldBe` Right (TyVar "U")
 
+  it "typechecks simple let expressions" $ do
+    tc' ["A"] [] (Let "x" (Var "y")) `shouldBeRight` TyVar "A"
+
   it "typechecks application of annotated variables" $ do
     let f = VarAnn "f" (TyArrow (TyVar "T") (TyVar "T"))
         x = VarAnn "x" (TyVar "T")
@@ -85,6 +88,10 @@ spec = describe "typecheck" $ do
           ]
 
     tc' ["C"] ctx (App (Var "a") (Var "b")) 
+      `shouldSatisfy` isLeft
+
+  it "nested let fails" $ do
+    tc' ["A"] [] (Abs "x" (TyVar "T") (Let "y" (Var "z")))
       `shouldSatisfy` isLeft
 
   it "apply arrow to variable of wrong type fails" $ do

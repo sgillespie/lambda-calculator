@@ -14,10 +14,14 @@ import Text.Parsec.Text
 import Language.Lambda.SystemF.Expression
 
 parseExpr :: Text -> Either ParseError (SystemFExpr Text)
-parseExpr = parse (whitespace *> expr <* eof) ""
+parseExpr = parse (whitespace *> topLevelExpr <* eof) ""
 
 parseType :: Text -> Either ParseError (Ty Text)
 parseType = parse (whitespace *> ty <* eof) ""
+
+-- Lets can only be at the top level
+topLevelExpr :: Parser (SystemFExpr Text)
+topLevelExpr = let' <|> expr
 
 -- Parse expressions
 expr :: Parser (SystemFExpr Text)
@@ -35,6 +39,10 @@ tyapp = TyApp
 term :: Parser (SystemFExpr Text)
 term = try abs <|> tyabs <|> var <|> parens expr
 
+let' :: Parser (SystemFExpr Text)
+let' = Let <$> ident <*> expr
+  where ident = symbol' "let" *> exprId <* symbol '='
+
 var :: Parser (SystemFExpr Text)
 var = try varann <|> var'
   where var' = Var <$> exprId
@@ -42,7 +50,7 @@ var = try varann <|> var'
 
 abs :: Parser (SystemFExpr Text)
 abs = curry'
-    <$> (symbol '\\' *> many1 args <* symbol '.') 
+    <$> (symbol '\\' *> many1 args <* symbol '.')
     <*> expr
   where args = (,) <$> (exprId <* symbol ':') <*> ty
         curry' = flip . foldr . uncurry $ Abs
