@@ -7,8 +7,6 @@ import Test.Hspec
 
 import Language.Lambda.Shared.Errors
 import Language.Lambda.Untyped
-import Language.Lambda.Untyped.Eval
-import Language.Lambda.Untyped.State
 
 spec :: Spec
 spec = do

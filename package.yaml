@@ -73,6 +73,7 @@ library:
     - Language.Lambda.Untyped.Parser
     - Language.Lambda.Untyped.State
     - Language.Lambda.SystemF
+    - Language.Lambda.SystemF.Eval
     - Language.Lambda.SystemF.Expression
     - Language.Lambda.SystemF.Parser
     - Language.Lambda.SystemF.State

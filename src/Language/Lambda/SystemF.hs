@@ -12,7 +12,7 @@ module Language.Lambda.SystemF (
   ) where
 
 import Language.Lambda.Shared.Errors
-import Language.Lambda.Shared.UniqueSupply (defaultUniques)
+import Language.Lambda.Shared.UniqueSupply (defaultUniques, defaultTyUniques)
 import Language.Lambda.SystemF.Expression
 import Language.Lambda.SystemF.Parser
 import Language.Lambda.SystemF.State
@@ -26,9 +26,9 @@ import qualified Data.Map as Map
 evalText
   :: Text
   -> Typecheck Text (TypedExpr Text)
-evalText = either throwParseError typecheckExpr . parseExpr
+evalText = either throwParseError typecheckExpr' . parseExpr
     where throwParseError = throwError . ParseError . Text.pack . show
-          typecheckExpr expr = TypedExpr expr <$> typecheck expr
+          typecheckExpr' expr = TypedExpr expr <$> typecheck expr
 
 runEvalText
   :: Text
@@ -47,9 +47,6 @@ unsafeExecEvalText
   -> Globals Text
   -> TypedExpr Text
 unsafeExecEvalText input globals' = unsafeExecTypecheck (evalText input) (mkState globals')
-
-defaultTyUniques :: [Text]
-defaultTyUniques = map Text.toUpper defaultUniques
 
 mkState :: Globals Text -> TypecheckState Text
 mkState globals' = TypecheckState context' defaultUniques defaultTyUniques

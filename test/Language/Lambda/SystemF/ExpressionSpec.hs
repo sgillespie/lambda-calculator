@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings, NoImplicitPrelude #-}
 module Language.Lambda.SystemF.ExpressionSpec where
 
 import RIO
