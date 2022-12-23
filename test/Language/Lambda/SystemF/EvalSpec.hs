@@ -3,6 +3,7 @@ module Language.Lambda.SystemF.EvalSpec (spec) where
 import RIO
 import Test.Hspec
 
+import Language.Lambda.Shared.Errors (isImpossibleError)
 import Language.Lambda.Shared.UniqueSupply (defaultUniques, defaultTyUniques)
 import Language.Lambda.SystemF.Expression
 import Language.Lambda.SystemF.Eval
@@ -37,20 +38,101 @@ spec = do
   describe "subGlobals" $ pure ()
 
   describe "betaReduce" $ do
-    it "reduces simple applications" pending
+    let betaReduce' :: SystemFExpr Text -> SystemFExpr Text -> SystemFExpr Text
+        betaReduce' e1 e2 = unsafeExecTypecheck (betaReduce e1 e2) $
+          mkTypecheckState defaultUniques defaultTyUniques
+    
+    it "reduces simple applications" $ do
+      let e1 = Abs "x" (TyVar "T") (Var "x")
+          e2 = Var "y"
 
-    it "reduces nested abstractions" pending
+      betaReduce' e1 e2 `shouldBe` e2
 
-    it "reduces inner applications" pending
+    it "reduces nested abstractions" $ do
+      let e1 = Abs "x" (TyVar "T") (Abs "y" (TyVar "U") (Var "x"))
+          e2 = Var "z"
+      betaReduce' e1 e2 `shouldBe` Abs "y" (TyVar "U") (Var "z")
 
-    it "does not reduce unreducible expressions" pending
+    it "reduces inner applications" $ do
+      let e1 = Abs "f" (TyArrow (TyVar "T") (TyVar "T")) $
+            App (Var "f") (VarAnn "x" (TyVar "T"))
+          e2 = Var "g"
+      betaReduce' e1 e2 `shouldBe` App (Var "g") (VarAnn "x" (TyVar "T"))
 
-    it "does not reduce irreducible chained applications" pending
+    it "does not reduce unreducible expressions" $ do
+      let e2 = Var "y"
 
-    it "does not sub shadowed bindings" pending
+      betaReduce' (Var "x") e2
+        `shouldBe` App (Var "x") (Var "y")
+      betaReduce' (VarAnn "x" (TyVar "T")) e2
+        `shouldBe` App (VarAnn "x" (TyVar "T")) (Var "y")
+      betaReduce' (TyAbs "X" (Var "x")) e2
+        `shouldBe` App (TyAbs "X" (Var "x")) e2
+      betaReduce' (TyApp (Var "x") (TyVar "X")) e2
+        `shouldBe` App (TyApp (Var "x") (TyVar "X")) e2
 
-  describe "alphaConvert" $ pure ()
+    it "does not reduce irreducible chained applications" $ do
+      let e1 = App (Var "x") (Var "y")
+          e2 = Var "z"
+      betaReduce' e1 e2 `shouldBe` App (App (Var "x") (Var "y")) (Var "z")
 
-  describe "etaConvert" $ pure ()
+    it "does not sub shadowed bindings" $ do
+      let e1 = Abs "x" (TyVar "T") (Abs "x" (TyVar "U") (Var "x"))
+          e2 = Var "z"
+      betaReduce' e1 e2 `shouldBe` Abs "x" (TyVar "U") (Var "x")
 
-  describe "freeVarsOf" $ pure ()
+    it "fails to reduce Let" $ do
+      let e1 = Let "x" (Var "x")
+          e2 = Var "z"
+      evaluate (betaReduce' e1 e2) `shouldThrow` isImpossibleError
+
+    it "avoids capture" $ do
+      let beta :: SystemFExpr Text -> SystemFExpr Text -> SystemFExpr Text
+          beta e1 e2 = unsafeExecTypecheck (betaReduce e1 e2) $
+            mkTypecheckState ["z"] defaultTyUniques
+      
+      let e1 = Abs "f" (TyArrow (TyVar "T") (TyVar "U")) $
+            Abs "x" (TyVar "U") $
+              App (Var "f") (Var "x")
+          e2 = Abs "f" (TyVar "T") $ Var "x"
+      beta e1 e2 `shouldBe` Abs "z" (TyVar "U") (Var "x")
+
+  describe "alphaConvert" $ do
+    let alphaConvert' :: [Text] -> [Text] -> SystemFExpr Text -> SystemFExpr Text
+        alphaConvert' uniques' fvs expr = unsafeExecTypecheck (alphaConvert fvs expr) $
+          mkTypecheckState uniques' defaultTyUniques
+    
+    it "alpha converts simple expressions" $ do
+      let freeVars = ["x"] :: [Text]
+          expr = Abs "x" (TyVar "T") (Var "x")
+          uniques' = ["y"]
+      alphaConvert' uniques' freeVars expr `shouldBe` Abs "y" (TyVar "T") (Var "y")
+
+    it "avoids captures" $ do
+      let freeVars = ["x"]
+          expr = Abs "x" (TyVar "T") (Var "x")
+          uniques' = ["x", "y"]
+      alphaConvert' uniques' freeVars expr `shouldBe` Abs "y" (TyVar "T") (Var "y")
+
+  describe "etaConvert" $ do
+    it "eta converts simple expressions" pending
+    it "eta converts nested applications" pending
+    it "ignores non-eta convertable expressions" pending
+      
+
+  describe "freeVarsOf" $ do
+    let freeVarsOf' :: SystemFExpr Text -> [Text]
+        freeVarsOf' = freeVarsOf
+    
+    it "Returns simple vars" $ do
+      freeVarsOf' (Var "x") `shouldBe` ["x"]
+      freeVarsOf' (VarAnn "x" (TyVar "T")) `shouldBe` ["x"]
+      
+    it "Does not return bound vars" $ 
+      freeVarsOf' (Abs "x" (TyVar "T") (Var "x")) `shouldBe` []
+      
+    it "Returns nested simple vars" $
+      freeVarsOf' (Abs "x" (TyVar "T") (Var "y")) `shouldBe` ["y"]
+                                                             
+    it "Returns applied simple vars" $
+      freeVarsOf' (App (Var "x") (Var "y")) `shouldBe` ["x", "y"]

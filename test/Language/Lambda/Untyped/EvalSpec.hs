@@ -96,6 +96,14 @@ spec = do
           e2 = Var "z"
       betaReduce' e1 e2 `shouldBe` Abs "x" (Var "x")
 
+    it "avoids captures" $ do
+      let beta :: LambdaExpr Text -> LambdaExpr Text -> LambdaExpr Text
+          beta e1 e2 = unsafeExecEval (betaReduce e1 e2) (mkEvalState ["z"])
+      
+      let e1 = Abs "f" $ Abs "x" $ App (Var "f") (Var "x")
+          e2 = Abs "f" $ Var "x"
+      beta e1 e2 `shouldBe` Abs "z" (Var "x")
+
   describe "alphaConvert" $ do
     let alphaConvert' :: [Text] -> [Text] -> LambdaExpr Text -> LambdaExpr Text
         alphaConvert' uniques' fvs expr
