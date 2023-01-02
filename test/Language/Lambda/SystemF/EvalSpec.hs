@@ -3,7 +3,7 @@ module Language.Lambda.SystemF.EvalSpec (spec) where
 import RIO
 import Test.Hspec
 
-import Language.Lambda.Shared.Errors (isImpossibleError)
+import Language.Lambda.Shared.Errors (isLetError, isImpossibleError)
 import Language.Lambda.Shared.UniqueSupply (defaultUniques, defaultTyUniques)
 import Language.Lambda.SystemF.Expression
 import Language.Lambda.SystemF.Eval
@@ -23,17 +23,40 @@ spec = do
       evalExpr' (App (Abs "x" (TyVar "T") (Var "x")) (Var "y"))
         `shouldBeRight` Var "y"
 
-    it "reduces multiple applications" pending
+    it "reduces multiple applications" $ do
+      let expr = App innerL innerR
+          innerL = App
+            (Abs "f" (TyArrow (TyVar "T") (TyVar "T")) $
+              Abs "x" (TyVar "T") $
+                App (Var "f") (Var "x"))
+            (Var "g")
+          innerR = Var "y"
+      evalExpr' expr `shouldBeRight` App (Var "g") (Var "y")
   
-    it "reduces inner redexes" pending
+    it "reduces inner redexes" $ do
+      let expr = Abs "x" (TyVar "T") $
+            App
+              (Abs "y" (TyVar "T") (Var "y"))
+              (Var "x")
 
-    it "reduces with name captures" pending
+      evalExpr' expr `shouldBeRight` Abs "x" (TyVar "T") (Var "x")
+
+    it "reduces with name captures" $ do
+      let expr = App innerL innerR
+          innerL = Abs "f" (TyArrow (TyVar "T") (TyVar "T")) $
+            Abs "x" (TyVar "T") $
+              App (Var "f") (Var "x")
+          innerR = Abs "f" (TyVar "U") (Var "x")
+
+      evalExpr' expr `shouldBeRight` Abs "z" (TyVar "T") (Var "x")
   
     it "reduces let bodies" pending
 
     it "let expressions update state" pending
   
-    it "nested let expressions fail" pending
+    it "nested let expressions fail" $ do
+      let res = evalExpr' (Let "x" (Let "y" (Var "z")))
+      res `shouldSatisfy` either isLetError (const False)
 
   describe "subGlobals" $ pure ()
 

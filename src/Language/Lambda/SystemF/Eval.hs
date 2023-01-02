@@ -15,13 +15,30 @@ import Control.Monad.Except (throwError)
 import Prettyprinter
 import RIO
 
+-- | Evaluates an expression
 evalExpr
   :: (Pretty name, Ord name)
   => SystemFExpr name
   -> Typecheck name (SystemFExpr name)
-evalExpr (Abs n ty expr) = Abs n ty <$> evalExpr expr
-evalExpr (App e1 e2) = evalApp e1 e2
-evalExpr expr = pure expr
+evalExpr = evalTopLevel
+
+-- | Evaluates a top-level expression
+evalTopLevel
+  :: (Pretty name, Ord name)
+  => SystemFExpr name
+  -> Typecheck name (SystemFExpr name)
+evalTopLevel (Let n expr) = Let n <$> evalInner expr
+evalTopLevel expr = evalInner expr
+
+-- | Evaluates a non top-level expression. Does NOT support Lets
+evalInner
+  :: (Pretty name, Ord name)
+  => SystemFExpr name
+  -> Typecheck name (SystemFExpr name)
+evalInner (Abs n ty expr) = Abs n ty <$> evalInner expr
+evalInner (App e1 e2) = evalApp e1 e2
+evalInner (Let n expr) = throwError . InvalidLet . prettyPrint $ Let n expr
+evalInner expr = pure expr
 
 evalApp
   :: (Pretty name, Ord name)
@@ -29,8 +46,8 @@ evalApp
   -> SystemFExpr name
   -> Typecheck name (SystemFExpr name)
 evalApp e1 e2 = do
-  e1' <- evalExpr e1
-  e2' <- evalExpr e2
+  e1' <- evalInner e1
+  e2' <- evalInner e2
 
   betaReduce e1' e2'
 
@@ -43,7 +60,7 @@ betaReduce e1 e2 = case e1 of
   App e1' e2' -> App <$> betaReduce e1' e2' <*> pure e2
   Abs n _ e1' -> do
     converted <- alphaConvert (freeVarsOf e2) e1'
-    evalExpr $ substitute converted n e2
+    evalInner $ substitute converted n e2
   Let _ _ -> throwError ImpossibleError
   _ -> pure $ App e1 e2
 
