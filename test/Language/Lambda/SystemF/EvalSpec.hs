@@ -115,10 +115,37 @@ spec = do
       alphaConvert' uniques' freeVars expr `shouldBe` Abs "y" (TyVar "T") (Var "y")
 
   describe "etaConvert" $ do
-    it "eta converts simple expressions" pending
-    it "eta converts nested applications" pending
-    it "ignores non-eta convertable expressions" pending
+    it "eta converts simple expressions" $ do
+      let expr :: SystemFExpr Text
+          expr = Abs "x" (TyVar "T") $ App (Var "f") (Var "x")
+      etaConvert expr `shouldBe` Var "f"
       
+    it "eta converts nested applications" $ do
+      let expr1 :: SystemFExpr Text
+          expr1 = Abs "y" (TyVar "T")  $ App (App (Var "f") (Var "x")) (Var "y")
+      etaConvert expr1 `shouldBe` App (Var "f") (Var "x")
+
+      let expr2 :: SystemFExpr Text
+          expr2 = Abs "x" (TyArrow (TyVar "T") (TyVar "T")) $
+            Abs "y" (TyVar "T") $
+              App (App (Var "f") (Var "x")) (Var "y")
+      etaConvert expr2 `shouldBe` Var "f" 
+
+      let expr3 :: SystemFExpr Text
+          expr3 = Abs "x" (TyVar "T") $
+            Abs "y" (TyArrow (TyVar "T") (TyVar "T")) $
+              App (Var "y") (Var "x")
+      etaConvert expr3 `shouldBe` expr3
+
+      let expr4 :: SystemFExpr Text
+          expr4 = Abs "f" (TyVar "T") $
+            Abs "x" (TyVar "T") (Var "x")
+      etaConvert expr4 `shouldBe` expr4
+      
+    it "ignores non-eta convertable expressions" $ do
+      let expr :: SystemFExpr Text
+          expr = Abs "x" (TyVar "T") $ Var "x"
+      etaConvert expr `shouldBe` expr
 
   describe "freeVarsOf" $ do
     let freeVarsOf' :: SystemFExpr Text -> [Text]

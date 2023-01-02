@@ -2,6 +2,7 @@ module Language.Lambda.SystemF.Eval
   ( evalExpr,
     betaReduce,
     alphaConvert,
+    etaConvert,
     freeVarsOf
   ) where
 
@@ -56,6 +57,19 @@ alphaConvert freeVars (Abs name ty body) = do
   nextName <- next freeVars uniques
   alphaConvertAbs name ty body freeVars nextName
 alphaConvert _ expr = pure expr
+
+etaConvert :: Ord name => SystemFExpr name -> SystemFExpr name
+etaConvert (Abs name ty body) = case body of
+  App e1 (Var name')
+    | name == name' -> etaConvert e1
+    | otherwise -> Abs name ty (App (etaConvert e1) (Var name'))
+  body'@Abs{}
+    | body' == eta' -> Abs name ty body'
+    | otherwise -> etaConvert $ Abs name ty eta'
+    where eta' = etaConvert body'
+  _ -> Abs name ty $ etaConvert body
+etaConvert (App e1 e2) = App (etaConvert e1) (etaConvert e2)
+etaConvert expr = expr
 
 substitute
   :: Eq name
