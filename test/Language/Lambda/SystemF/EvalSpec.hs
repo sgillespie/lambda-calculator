@@ -1,6 +1,7 @@
 module Language.Lambda.SystemF.EvalSpec (spec) where
 
 import RIO
+import RIO.Map (fromList)
 import Test.Hspec
 
 import Language.Lambda.Shared.Errors (isLetError, isImpossibleError)
@@ -50,15 +51,41 @@ spec = do
 
       evalExpr' expr `shouldBeRight` Abs "z" (TyVar "T") (Var "x")
   
-    it "reduces let bodies" pending
+    it "reduces let bodies" $ do
+      let expr = Let "x" $
+            App
+              (Abs "y" (TyVar "Y") (Var "y"))
+              (Var "z")
+      evalExpr' expr `shouldBeRight` Let "x" (Var "z")
 
-    it "let expressions update state" pending
+    it "let expressions update state" $ do
+      let res = flip unsafeExecTypecheck (mkTypecheckState defaultUniques defaultTyUniques) $ do
+            _ <- evalExpr $ Let "w" (Var "x")
+            evalExpr $ Var "w"
+
+      res `shouldBe` Var "x"
   
     it "nested let expressions fail" $ do
       let res = evalExpr' (Let "x" (Let "y" (Var "z")))
       res `shouldSatisfy` either isLetError (const False)
 
-  describe "subGlobals" $ pure ()
+  describe "subGlobals" $ do
+    let subGlobals' :: SystemFExpr Text -> SystemFExpr Text
+        subGlobals' expr = unsafeExecTypecheck (subGlobals expr) state
+        state = TypecheckState globals' defaultUniques defaultTyUniques
+        globals' = fromList [("w", TypedExpr (Var "x") (TyVar "X"))]
+    
+    it "subs simple variables" $ do
+      subGlobals' (Var "w")  `shouldBe` Var "x"
+      subGlobals' (VarAnn "w" (TyVar "X"))  `shouldBe` Var "x"
+      
+    it "does not sub shadowed bindings" $ do
+      let expr = Abs "w" (TyVar "W") $ Var "w"
+      subGlobals' expr `shouldBe` expr
+      
+    xit "does not capture globals" $ do
+      let expr = Abs "x" (TyVar "X") $ Var "w"
+      subGlobals' expr `shouldBe` Abs "a" (TyVar "X") (Var "x")
 
   describe "betaReduce" $ do
     let betaReduce' :: SystemFExpr Text -> SystemFExpr Text -> SystemFExpr Text

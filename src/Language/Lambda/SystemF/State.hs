@@ -9,21 +9,23 @@ module Language.Lambda.SystemF.State
     unsafeExecTypecheck,
     mkTypecheckState,
     _context,
+    _globals,
     _varUniques,
     _tyUniques,
     getContext,
+    getGlobals,
     getVarUniques,
     getTyUniques,
-    modifyContext,
+    modifyGlobals,
     modifyVarUniques,
     modifyTyUniques,
-    setContext,
+    setGlobals,
     setVarUniques,
     setTyUniques
   ) where
 
 import Language.Lambda.Shared.Errors (LambdaException(..))
-import Language.Lambda.SystemF.Expression (Ty(..), TypedExpr(..))
+import Language.Lambda.SystemF.Expression
 
 import Control.Monad.Except (Except(), runExcept)
 import RIO
@@ -31,10 +33,10 @@ import RIO.State
 import qualified RIO.Map as Map
 
 data TypecheckState name = TypecheckState
-  { tsContext :: Context name,
+  { tsGlobals :: Globals name,
     tsVarUniques :: [name],  -- ^ A unique supply of term-level variables
-    tsTyUniques :: [name] -- ^ A unique supply of type-level variables
-  }
+    tsTyUniques :: [name]    -- ^ A unique supply of type-level variables
+  } deriving (Eq, Show)
 
 type Typecheck name
   = StateT (TypecheckState name)
@@ -70,9 +72,13 @@ unsafeExecTypecheck computation state' = either impureThrow id tcResult
 mkTypecheckState :: [name] -> [name] -> TypecheckState name
 mkTypecheckState = TypecheckState Map.empty
 
-_context :: Lens' (TypecheckState name) (Context name)
-_context f state' = (\context' -> state' { tsContext = context' })
-  <$> f (tsContext state')
+_context :: SimpleGetter (TypecheckState name) (Context name)
+_context = to (getContext' . tsGlobals)
+  where getContext' = Map.map (^. _ty)
+
+_globals :: Lens' (TypecheckState name) (Globals name)
+_globals f state' = (\globals' -> state' { tsGlobals = globals' })
+  <$> f (tsGlobals state')
 
 _varUniques :: Lens' (TypecheckState name) [name]
 _varUniques f state' = (\uniques' -> state' { tsVarUniques = uniques' })
@@ -91,8 +97,11 @@ getTyUniques = gets (^. _tyUniques)
 getContext :: Typecheck name (Context name)
 getContext = gets (^. _context)
 
-modifyContext :: (Context name -> Context name) -> Typecheck name ()
-modifyContext f = modify $ _context %~ f
+getGlobals :: Typecheck name (Globals name)
+getGlobals = gets (^. _globals)
+
+modifyGlobals :: (Globals name -> Globals name) -> Typecheck name ()
+modifyGlobals f = modify $ _globals %~ f
 
 modifyVarUniques :: ([name] -> [name]) -> Typecheck name ()
 modifyVarUniques f = modify $ _varUniques %~ f
@@ -106,5 +115,5 @@ setVarUniques uniques' = modify $ _varUniques .~ uniques'
 setTyUniques :: [name] -> Typecheck name ()
 setTyUniques uniques' = modify $ _tyUniques .~ uniques'
 
-setContext :: Context name -> Typecheck name ()
-setContext context' = modify $ _context .~ context'
+setGlobals :: Globals name -> Typecheck name ()
+setGlobals globals' = modify $ _globals .~ globals'

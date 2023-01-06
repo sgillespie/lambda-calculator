@@ -1,5 +1,6 @@
 module Language.Lambda.SystemF.Eval
   ( evalExpr,
+    subGlobals,
     betaReduce,
     alphaConvert,
     etaConvert,
@@ -14,6 +15,7 @@ import Language.Lambda.SystemF.State
 import Control.Monad.Except (throwError)
 import Prettyprinter
 import RIO
+import qualified RIO.Map as Map
 
 -- | Evaluates an expression
 evalExpr
@@ -27,8 +29,8 @@ evalTopLevel
   :: (Pretty name, Ord name)
   => SystemFExpr name
   -> Typecheck name (SystemFExpr name)
-evalTopLevel (Let n expr) = Let n <$> evalInner expr
-evalTopLevel expr = evalInner expr
+evalTopLevel (Let n expr) = subGlobals expr >>= evalInner >>= evalLet n
+evalTopLevel expr = subGlobals expr >>= evalInner 
 
 -- | Evaluates a non top-level expression. Does NOT support Lets
 evalInner
@@ -39,6 +41,26 @@ evalInner (Abs n ty expr) = Abs n ty <$> evalInner expr
 evalInner (App e1 e2) = evalApp e1 e2
 evalInner (Let n expr) = throwError . InvalidLet . prettyPrint $ Let n expr
 evalInner expr = pure expr
+
+subGlobals :: Ord name => SystemFExpr name -> Typecheck name (SystemFExpr name)
+subGlobals expr = getGlobals >>= subGlobals'
+  where subGlobals' globals' = case expr of
+          Var x -> pure . maybe expr (view _expr) $ globals' Map.!? x
+          VarAnn x _ -> pure . maybe expr (view _expr) $ globals' Map.!? x
+          App e1 e2 -> App <$> subGlobals e1 <*> subGlobals e2
+          Abs name ty expr'
+            | Map.member name globals' -> pure expr
+            | otherwise -> Abs name ty <$> subGlobals expr'
+          _ -> pure expr
+
+evalLet
+  :: Ord name
+  => name
+  -> SystemFExpr name
+  -> Typecheck name (SystemFExpr name)
+evalLet name expr = modifyGlobals addBinding >> pure (Let name expr)
+  -- TODO[sgillespie]: We don't know the type of expr!
+  where addBinding = Map.insert name (TypedExpr expr undefined)
 
 evalApp
   :: (Pretty name, Ord name)

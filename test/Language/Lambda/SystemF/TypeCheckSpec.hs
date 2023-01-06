@@ -15,29 +15,31 @@ import Test.Hspec
 
 tc
   :: [Text]
-  -> [(Text, Ty Text)]
+  -> [(Text, TypedExpr Text)]
   -> SystemFExpr Text
   -> Either LambdaException (Ty Text, TypecheckState Text)
-tc uniqs ctx expr = runTypecheck (typecheck expr) initialState
-  where initialState = TypecheckState (fromList ctx) defaultUniques uniqs
+tc uniqs globals' expr = runTypecheck (typecheck expr) initialState
+  where initialState = TypecheckState (fromList globals') defaultUniques uniqs
 
 tc'
   :: [Text]
-  -> [(Text, Ty Text)]
+  -> [(Text, TypedExpr Text)]
   -> SystemFExpr Text
   -> Either LambdaException (Ty Text)
-tc' uniqs ctx expr = over _Right fst $ tc uniqs ctx expr
+tc' uniqs globals' expr = over _Right fst $ tc uniqs globals' expr
 
 spec :: Spec
 spec = describe "typecheck" $ do
+  let someGlobal = ("x", TypedExpr (Var "y") (TyVar "X"))
+  
   it "typechecks simple variables in context" $
-    tc' [] [("x", TyVar "X")] (Var "x") `shouldBe` Right (TyVar "X")
+    tc' [] [someGlobal] (Var "x") `shouldBe` Right (TyVar "X")
 
   it "typechecks simple variables not in context" $ 
     tc' ["A"] [] (Var "x") `shouldBe` Right (TyVar "A")
 
   it "typechecks annotated variables in context" $
-    tc' [] [("x", TyVar "X")] (VarAnn "x" (TyVar "X"))
+    tc' [] [someGlobal] (VarAnn "x" (TyVar "X"))
       `shouldBe` Right (TyVar "X")
 
   it "typechecks annotated variables in context" $
@@ -55,12 +57,12 @@ spec = describe "typecheck" $ do
       `shouldBeRight` empty
 
   it "typechecks simple applications" $ do
-    let ctx = [
-          ("f", TyArrow (TyVar "T") (TyVar "U")),
-          ("a", TyVar "T")
+    let globals' = [
+          ("f", TypedExpr (Var "f") $ TyArrow (TyVar "T") (TyVar "U")),
+          ("a", TypedExpr (Var "a") $ TyVar "T")
           ]
 
-    tc' [] ctx (App (Var "f") (Var "a")) `shouldBe` Right (TyVar "U")
+    tc' [] globals' (App (Var "f") (Var "a")) `shouldBe` Right (TyVar "U")
 
   it "typechecks simple let expressions" $ do
     tc' ["A"] [] (Let "x" (Var "y")) `shouldBeRight` TyVar "A"
@@ -78,16 +80,16 @@ spec = describe "typecheck" $ do
     tc' [] [] (App f x) `shouldBe` Right (TyVar "T")
 
   it "annotated variable with wrong type fails" $ 
-    tc' [] [("x", TyVar "T")] (VarAnn "x" (TyVar "X"))
+    tc' [] [someGlobal] (VarAnn "x" (TyVar "Y"))
       `shouldSatisfy` isLeft
 
   it "apply variable to variable fails" $ do
-    let ctx = [
-          ("a", TyVar "A"),
-          ("b", TyVar "B")
-          ]
+    let globals'
+          = [ ("a", TypedExpr (Var "a") (TyVar "A")),
+              ("b", TypedExpr (Var "b") (TyVar "B"))
+            ]
 
-    tc' ["C"] ctx (App (Var "a") (Var "b")) 
+    tc' ["C"] globals' (App (Var "a") (Var "b")) 
       `shouldSatisfy` isLeft
 
   it "nested let fails" $ do
@@ -95,12 +97,12 @@ spec = describe "typecheck" $ do
       `shouldSatisfy` isLeft
 
   it "apply arrow to variable of wrong type fails" $ do
-    let ctx = [
-          ("f", TyArrow (TyVar "F") (TyVar "G")),
-          ("b", TyVar "B")
+    let globals' = [
+          ("f", TypedExpr (Var "f") (TyArrow (TyVar "F") (TyVar "G"))),
+          ("b", TypedExpr (Var "b") (TyVar "B"))
           ]
 
-    tc' [] ctx (App (Var "f") (Var "b")) `shouldSatisfy` isLeft
+    tc' [] globals' (App (Var "f") (Var "b")) `shouldSatisfy` isLeft
 
   it "typechecks simple type abstractions" $
     tc' ["A"] [] (TyAbs "X" (Var "x")) `shouldBe` Right (TyForAll "X" (TyVar "A"))
@@ -110,7 +112,7 @@ spec = describe "typecheck" $ do
       `shouldBe` Right (TyForAll "X" (TyArrow (TyVar "X") (TyVar "X")))
 
   it "typechecks type abstractions with application" $
-    tc' [] [("y", TyVar "Y")] 
+    tc' [] [("y", TypedExpr (Var "y") (TyVar "Y"))] 
       (App (TyApp (TyAbs "X" (Abs "x" (TyVar "X") (Var "x"))) (TyVar "Y")) 
            (Var "y"))
       `shouldBe` Right (TyVar "Y")
@@ -121,8 +123,10 @@ spec = describe "typecheck" $ do
     over _Right (^. (_2 . _context)) res
       `shouldBeRight` empty
 
-  it "typechecks simple type applications" $
-    tc' [] [("x", TyVar "A")] (TyApp (TyAbs "X" (Var "x")) (TyVar "X"))
+  it "typechecks simple type applications" $ do
+    let globals' = [("x", TypedExpr (Var "x") $ TyVar "A")]
+    
+    tc' [] globals' (TyApp (TyAbs "X" (Var "x")) (TyVar "X"))
       `shouldBe` Right (TyVar "A")
 
   it "typechecks type applications with simple abstraction" $
