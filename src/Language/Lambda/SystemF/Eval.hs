@@ -11,6 +11,7 @@ import Language.Lambda.Shared.Errors
 import Language.Lambda.Shared.UniqueSupply (next)
 import Language.Lambda.SystemF.Expression
 import Language.Lambda.SystemF.State
+import Language.Lambda.SystemF.TypeCheck (typecheck)
 
 import Control.Monad.Except (throwError)
 import Prettyprinter
@@ -29,7 +30,7 @@ evalTopLevel
   :: (Pretty name, Ord name)
   => SystemFExpr name
   -> Typecheck name (SystemFExpr name)
-evalTopLevel (Let n expr) = subGlobals expr >>= evalInner >>= evalLet n
+evalTopLevel (Let n expr) = Let n <$> (subGlobals expr >>= evalInner)
 evalTopLevel expr = subGlobals expr >>= evalInner 
 
 -- | Evaluates a non top-level expression. Does NOT support Lets
@@ -52,15 +53,6 @@ subGlobals expr = getGlobals >>= subGlobals'
             | Map.member name globals' -> pure expr
             | otherwise -> Abs name ty <$> subGlobals expr'
           _ -> pure expr
-
-evalLet
-  :: Ord name
-  => name
-  -> SystemFExpr name
-  -> Typecheck name (SystemFExpr name)
-evalLet name expr = modifyGlobals addBinding >> pure (Let name expr)
-  -- TODO[sgillespie]: We don't know the type of expr!
-  where addBinding = Map.insert name (TypedExpr expr undefined)
 
 evalApp
   :: (Pretty name, Ord name)

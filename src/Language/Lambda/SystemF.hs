@@ -5,6 +5,7 @@ module Language.Lambda.SystemF (
   unsafeExecEvalText,
   defaultUniques,
   defaultTyUniques,
+  mkState,
 
   module Language.Lambda.SystemF.Expression,
   module Language.Lambda.SystemF.Parser,
@@ -13,6 +14,7 @@ module Language.Lambda.SystemF (
 
 import Language.Lambda.Shared.Errors
 import Language.Lambda.Shared.UniqueSupply (defaultUniques, defaultTyUniques)
+import Language.Lambda.SystemF.Eval (evalExpr)
 import Language.Lambda.SystemF.Expression
 import Language.Lambda.SystemF.Parser
 import Language.Lambda.SystemF.State
@@ -21,14 +23,13 @@ import Language.Lambda.SystemF.TypeCheck
 import Control.Monad.Except
 import RIO
 import qualified RIO.Text as Text
-import qualified Data.Map as Map
+import qualified RIO.Map as Map
 
 evalText
   :: Text
   -> Typecheck Text (TypedExpr Text)
-evalText = either throwParseError typecheckExpr' . parseExpr
+evalText = either throwParseError processExpr . parseExpr
     where throwParseError = throwError . ParseError . Text.pack . show
-          typecheckExpr' expr = TypedExpr expr <$> typecheck expr
 
 runEvalText
   :: Text
@@ -49,5 +50,18 @@ unsafeExecEvalText
 unsafeExecEvalText input globals' = unsafeExecTypecheck (evalText input) (mkState globals')
 
 mkState :: Globals Text -> TypecheckState Text
-mkState globals' = TypecheckState context' defaultUniques defaultTyUniques
-  where context' = Map.map (^. _ty) globals'
+mkState globals' = TypecheckState globals' defaultUniques defaultTyUniques
+
+processExpr :: SystemFExpr Text -> Typecheck Text (TypedExpr Text)
+processExpr (Let n expr) = tcAndEval expr >>= addBinding n
+processExpr expr = tcAndEval expr
+
+tcAndEval :: SystemFExpr Text -> Typecheck Text (TypedExpr Text)
+tcAndEval expr = do
+  ty <- typecheck expr
+  reduced <- evalExpr expr
+
+  pure $ TypedExpr reduced ty
+
+addBinding :: Text -> TypedExpr Text -> Typecheck Text (TypedExpr Text)
+addBinding name expr = modifyGlobals (Map.insert name expr) >> pure expr

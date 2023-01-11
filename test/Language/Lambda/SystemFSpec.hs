@@ -11,7 +11,7 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-  describe "evalString" $ do
+  describe "evalText" $ do
     let eval' :: Text -> Either LambdaException (SystemFExpr Text)
         eval' = over _Right (^. _expr) . eval
 
@@ -20,6 +20,19 @@ spec = do
       eval' "\\x:T. x" `shouldBeRight` Abs "x" (TyVar "T") (Var "x")
       eval' "\\X. x" `shouldBeRight` TyAbs "X" (Var "x")
       eval' "x [T]" `shouldBeRight` TyApp (Var "x") (TyVar "T")
+
+    it "reduces simple applications" $
+      eval' "(\\x:T. x) y:T" `shouldBeRight` VarAnn "y" (TyVar "T")
+
+    it "reduces applications with nested redexes" $
+      eval' "(\\f:T->T x:T. f x) (\\y:T. y)"
+        `shouldBeRight` Abs "x" (TyVar "T") (Var "x")
+
+    it "lets update state" $ do
+      let act = evalText "let x = a: A" >> evalText "x"
+
+      unsafeExecTypecheck act (mkTypecheckState [] [])
+        `shouldBe` TypedExpr (VarAnn "a" (TyVar "A")) (TyVar "A")
 
   describe "runEvalText" $ do
     let runEvalText' input = extract $ runEvalText input empty

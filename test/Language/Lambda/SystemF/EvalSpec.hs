@@ -58,13 +58,6 @@ spec = do
               (Var "z")
       evalExpr' expr `shouldBeRight` Let "x" (Var "z")
 
-    it "let expressions update state" $ do
-      let res = flip unsafeExecTypecheck (mkTypecheckState defaultUniques defaultTyUniques) $ do
-            _ <- evalExpr $ Let "w" (Var "x")
-            evalExpr $ Var "w"
-
-      res `shouldBe` Var "x"
-  
     it "nested let expressions fail" $ do
       let res = evalExpr' (Let "x" (Let "y" (Var "z")))
       res `shouldSatisfy` either isLetError (const False)
