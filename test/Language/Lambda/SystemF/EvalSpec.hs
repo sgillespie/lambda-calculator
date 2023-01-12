@@ -13,10 +13,10 @@ import Language.Lambda.SystemF.State
 
 spec :: Spec
 spec = do
-  describe "evalExpr" $ do
-    let evalExpr' expr = execTypecheck (evalExpr expr) $
+  let evalExpr' expr = execTypecheck (evalExpr expr) $
           mkTypecheckState defaultUniques defaultTyUniques
   
+  describe "evalExpr" $ do
     it "Does not reduce normal form" $ do
       evalExpr' (Var "x") `shouldBeRight` Var "x"
 
@@ -32,6 +32,7 @@ spec = do
                 App (Var "f") (Var "x"))
             (Var "g")
           innerR = Var "y"
+
       evalExpr' expr `shouldBeRight` App (Var "g") (Var "y")
   
     it "reduces inner redexes" $ do
@@ -61,6 +62,20 @@ spec = do
     it "nested let expressions fail" $ do
       let res = evalExpr' (Let "x" (Let "y" (Var "z")))
       res `shouldSatisfy` either isLetError (const False)
+
+    it "reduces type abstractions to A normal form" $ do
+      let expr = TyAbs "T" $
+            App
+              (Abs "y" (TyVar "T") (Var "y"))
+              (VarAnn "x" (TyVar "T"))
+
+      evalExpr' expr `shouldBeRight` TyAbs "T" (VarAnn "x" (TyVar "T"))
+
+    it "reduces simple type applications" $ do
+      let expr = TyApp
+            (TyAbs "T" (VarAnn "x" (TyVar "T")))
+            (TyVar "X")
+      evalExpr' expr `shouldBeRight` VarAnn "x" (TyVar "X")
 
   describe "subGlobals" $ do
     let subGlobals' :: SystemFExpr Text -> SystemFExpr Text
@@ -139,6 +154,66 @@ spec = do
               App (Var "f") (Var "x")
           e2 = Abs "f" (TyVar "T") $ Var "x"
       beta e1 e2 `shouldBe` Abs "z" (TyVar "U") (Var "x")
+
+  describe "evalTyApp" $ do
+    it "reduces simple type applications" $ do
+      let expr = TyApp
+            (TyAbs "T" (VarAnn "x" (TyVar "T")))
+            (TyVar "X")
+
+      evalExpr' expr `shouldBeRight` VarAnn "x" (TyVar "X")
+
+    it "reduces type applications with abstractions" $ do
+      let expr = TyApp
+            (TyAbs "T" (Abs "x" (TyVar "T") (Var "x")))
+            (TyVar "X")
+
+      evalExpr' expr `shouldBeRight` Abs "x" (TyVar "X") (Var "x")
+
+    it "does not reduce irreducible expressions" $ do
+      let tyApp inner = TyApp (TyAbs "T" inner) (TyVar "X")
+
+      evalExpr' (tyApp (Var "x")) `shouldBeRight` Var "x"
+      evalExpr' (tyApp (VarAnn "x" (TyVar "Z"))) `shouldBeRight` VarAnn "x" (TyVar "Z")
+      evalExpr' (tyApp (Abs "x" (TyVar "Z") (Var "x")))
+        `shouldBeRight` Abs "x" (TyVar "Z") (Var "x")
+
+    it "fails on let" $ do
+      let expr = TyApp (Let "x" (VarAnn "y" (TyVar "T"))) (TyVar "X")
+      evalExpr' expr `shouldSatisfy` either isLetError (const False)
+
+    it "reduces nested expressions" $ do
+      let tyApp inner = TyApp (TyAbs "T" inner) (TyVar "X")
+      
+      let e1 = App (Var "f") (VarAnn "x" (TyVar "T"))
+      evalExpr' (tyApp e1) `shouldBeRight` App (Var "f") (VarAnn "x" $ TyVar "X")
+
+      let e2 = Abs "x" (TyVar "U") (VarAnn "t" $ TyVar "T")
+      evalExpr' (tyApp e2) `shouldBeRight` Abs "x" (TyVar "U") (VarAnn "t" $ TyVar "X")
+
+      let e3 = TyAbs "U" $ VarAnn "x" (TyVar "T")
+      evalExpr' (tyApp e3) `shouldBeRight` TyAbs "U" (VarAnn "x" $ TyVar "X")
+
+      let e4 = TyApp (VarAnn "x" (TyVar "T")) (TyVar "U")
+      evalExpr' (tyApp e4) `shouldBeRight` TyApp (VarAnn "x" $ TyVar "X") (TyVar "U")
+
+      let e5 = TyApp
+            (TyAbs "U" $ VarAnn "x" (TyVar "U"))
+            (TyVar "T")
+      evalExpr' (tyApp e5) `shouldBeRight` VarAnn "x" (TyVar "X")
+
+    it "reduces in nested types" $ do
+      let tyApp inner = TyApp (TyAbs "T" inner) (TyVar "X")
+
+      let e1 = VarAnn "f" $ TyArrow (TyVar "T") (TyVar "U")
+      evalExpr' (tyApp e1) `shouldBeRight` VarAnn "f" (TyArrow (TyVar "X") (TyVar "U"))
+
+      let e2 = VarAnn "f" $ TyForAll "T" (TyVar "T")
+      evalExpr' (tyApp e2) `shouldBeRight` e2
+
+      let e3 = VarAnn "f" $ TyForAll "U" (TyVar "T")
+      evalExpr' (tyApp e3) `shouldBeRight` VarAnn "f" (TyForAll "U" (TyVar "X"))
+                
 
   describe "alphaConvert" $ do
     let alphaConvert' :: [Text] -> [Text] -> SystemFExpr Text -> SystemFExpr Text

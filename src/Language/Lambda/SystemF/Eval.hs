@@ -11,7 +11,6 @@ import Language.Lambda.Shared.Errors
 import Language.Lambda.Shared.UniqueSupply (next)
 import Language.Lambda.SystemF.Expression
 import Language.Lambda.SystemF.State
-import Language.Lambda.SystemF.TypeCheck (typecheck)
 
 import Control.Monad.Except (throwError)
 import Prettyprinter
@@ -31,7 +30,7 @@ evalTopLevel
   => SystemFExpr name
   -> Typecheck name (SystemFExpr name)
 evalTopLevel (Let n expr) = Let n <$> (subGlobals expr >>= evalInner)
-evalTopLevel expr = subGlobals expr >>= evalInner 
+evalTopLevel expr = subGlobals expr >>= evalInner
 
 -- | Evaluates a non top-level expression. Does NOT support Lets
 evalInner
@@ -40,6 +39,8 @@ evalInner
   -> Typecheck name (SystemFExpr name)
 evalInner (Abs n ty expr) = Abs n ty <$> evalInner expr
 evalInner (App e1 e2) = evalApp e1 e2
+evalInner (TyAbs n expr) = TyAbs n <$> evalInner expr
+evalInner (TyApp expr ty) = evalTyApp expr ty
 evalInner (Let n expr) = throwError . InvalidLet . prettyPrint $ Let n expr
 evalInner expr = pure expr
 
@@ -64,6 +65,15 @@ evalApp e1 e2 = do
   e2' <- evalInner e2
 
   betaReduce e1' e2'
+
+evalTyApp
+  :: (Pretty name, Ord name)
+  => SystemFExpr name
+  -> Ty name
+  -> Typecheck name (SystemFExpr name)
+evalTyApp expr ty = case expr of
+    TyAbs name inner -> evalInner $ substituteTyInExpr ty name inner
+    _ -> TyApp <$> evalInner expr <*> pure ty
 
 betaReduce
   :: (Ord name, Pretty name)
@@ -122,6 +132,39 @@ substitute expr forName inExpr
       (App e1 e2) -> App (sub e1) (sub e2)
       _ -> inExpr
   where sub expr' = substitute expr' forName inExpr
+
+substituteTyInExpr
+  :: Eq name
+  => Ty name
+  -> name
+  -> SystemFExpr name
+  -> SystemFExpr name
+substituteTyInExpr ty forName inExpr
+  = case inExpr of
+      VarAnn name ty' -> VarAnn name (substituteTy ty forName ty')
+      App e1 e2 -> App (sub e1) (sub e2)
+      Abs name ty' expr -> Abs name (substituteTy ty forName ty') (sub expr)
+      TyAbs name expr -> TyAbs name (sub expr)
+      TyApp expr ty' -> TyApp (sub expr) (substituteTy ty forName ty')
+      _ -> inExpr
+  where sub = substituteTyInExpr ty forName
+
+substituteTy
+  :: Eq name
+  => Ty name
+  -> name
+  -> Ty name
+  -> Ty name
+substituteTy ty forName inTy
+  = case inTy of
+      TyVar n
+        | n == forName -> ty
+        | otherwise -> inTy
+      TyArrow t1 t2 -> TyArrow (sub t1) (sub t2)
+      TyForAll n ty'
+        | n == forName -> inTy
+        | otherwise -> TyForAll n (sub ty')
+  where sub = substituteTy ty forName
   
 freeVarsOf
   :: (Ord name, Pretty name)
