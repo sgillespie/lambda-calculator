@@ -96,8 +96,6 @@ typecheckApp ctx e1 e2 = do
     then return t1AppOutput
     else throwError $ tyMismatchError (TyArrow t2 t1AppOutput) (TyArrow t1 t1AppOutput)
 
-
-
 typecheckTyAbs
   :: (Ord name, Pretty name)
   => Context name
@@ -129,6 +127,7 @@ substitute
   -> SystemFExpr n
 substitute ty name (App e1 e2) = App (substitute ty name e1) (substitute ty name e2)
 substitute ty name (Abs n ty' e) = Abs n (substituteTy ty name ty') (substitute ty name e)
+substitute ty name (VarAnn n ty') = VarAnn n $ substituteTy ty name ty'
 substitute ty name (TyAbs ty' e) = TyAbs ty' (substitute ty name e) 
 substitute ty name (TyApp e ty') = TyApp (substitute ty name e) (substituteTy ty name ty')
 substitute _ _ expr = expr

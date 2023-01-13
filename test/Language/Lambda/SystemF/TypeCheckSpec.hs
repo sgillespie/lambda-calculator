@@ -125,10 +125,15 @@ spec = describe "typecheck" $ do
 
   it "typechecks simple type applications" $ do
     let globals' = [("x", TypedExpr (Var "x") $ TyVar "A")]
+        tyApp inner = TyApp (TyAbs "X" inner) (TyVar "T")
     
-    tc' [] globals' (TyApp (TyAbs "X" (Var "x")) (TyVar "X"))
-      `shouldBe` Right (TyVar "A")
+    tc' [] globals' (tyApp $ Var "x") `shouldBeRight` TyVar "A"
+    tc' [] globals' (tyApp $ VarAnn "z" (TyVar "X")) `shouldBeRight` TyVar "T"
 
-  it "typechecks type applications with simple abstraction" $
-    tc' [] [] (TyApp (TyAbs "X" (Abs "x" (TyVar "X") (Var "x"))) (TyVar "Y"))
-      `shouldBe` Right (TyArrow (TyVar "Y") (TyVar "Y"))
+  it "typechecks type applications with simple abstraction" $ do
+    let tyApp inner = TyApp
+          (TyAbs "X" (Abs "x" (TyVar "X") inner))
+          (TyVar "Y")
+    
+    tc' [] [] (tyApp $ Var "x") `shouldBeRight` TyArrow (TyVar "Y") (TyVar "Y")
+    
