@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 module Language.Lambda.Untyped.Examples.NatSpec where
 
 import RIO
