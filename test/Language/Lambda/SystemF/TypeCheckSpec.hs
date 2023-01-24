@@ -104,6 +104,12 @@ spec = describe "typecheck" $ do
 
     tc' [] globals' (App (Var "f") (Var "b")) `shouldSatisfy` isLeft
 
+  it "type application to concrete type fails" $ do
+    let globals' = [("x", TypedExpr (Var "y") (TyVar "Y"))]
+    
+    tc' [] [] (TyApp (VarAnn "x" (TyVar "T")) (TyVar "U")) `shouldSatisfy` isLeft
+    tc' [] globals' (TyApp (Var "x") (TyVar "U")) `shouldSatisfy` isLeft
+
   it "typechecks simple type abstractions" $
     tc' ["A"] [] (TyAbs "X" (Var "x")) `shouldBe` Right (TyForAll "X" (TyVar "A"))
 
@@ -136,4 +142,30 @@ spec = describe "typecheck" $ do
           (TyVar "Y")
     
     tc' [] [] (tyApp $ Var "x") `shouldBeRight` TyArrow (TyVar "Y") (TyVar "Y")
+
+  it "typechecks polymorphic arguments" $ do
+    let expr = Abs "x" (TyForAll "T" (TyVar "T")) $ Var "x"
+        expr2 = Abs "x" (TyForAll "T" (TyArrow (TyVar "T") (TyVar "U"))) $ Var "x"
+        expr3 = Abs "x" (TyArrow (TyVar "U") (TyForAll "T" (TyVar "T"))) $ Var "x"
+        expr4 = Abs "x" (TyForAll "T" (TyVar "T")) $ VarAnn "x" (TyVar "T")
+
+    tc' [] [] expr `shouldBeRight` TyForAll "T" (TyArrow (TyVar "T") (TyVar "T"))
+    tc' [] [] expr2 `shouldBeRight`
+      TyForAll "T"
+        (TyArrow
+          (TyArrow (TyVar "T") (TyVar "U"))
+          (TyArrow (TyVar "T") (TyVar "U")))
+    tc' [] [] expr3 `shouldBeRight`
+      TyForAll "T"
+        (TyArrow
+          (TyArrow (TyVar "U") (TyVar "T"))
+          (TyArrow (TyVar "U") (TyVar "T")))
+    tc' [] [] expr4`shouldBeRight` TyForAll "T" (TyArrow (TyVar "T") (TyVar "T"))
+
+  it "typechecks polymorphic type application" $ do
+    let tyApp inner = TyApp inner (TyVar "Y")
+        expr = tyApp $ VarAnn "x" (TyForAll "X" (TyVar "X"))
+        expr2 = Abs "x" (TyForAll "X" (TyVar "X")) (TyApp (Var "x") (TyVar "Y"))
     
+    tc' [] [] expr `shouldBeRight` TyVar "Y"
+    tc' [] [] expr2 `shouldBeRight` TyForAll "X" (TyArrow (TyVar "X") (TyVar "Y"))

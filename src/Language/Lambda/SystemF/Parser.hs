@@ -62,7 +62,12 @@ tyabs = curry' <$> args <*> expr
 
 -- Parse type expressions
 ty :: Parser (Ty Text)
-ty = try arrow
+ty = try forall <|> try arrow
+
+forall :: Parser (Ty Text)
+forall = curry' <$> args <*> ty
+  where args = symbol' "forall" *> many1 typeId <* symbol '.'
+        curry' = flip $ foldr TyForAll
 
 arrow :: Parser (Ty Text)
 arrow = chainr1 tyterm (symbol' "->" $> TyArrow)

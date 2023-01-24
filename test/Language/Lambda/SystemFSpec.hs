@@ -19,7 +19,6 @@ spec = do
       eval' "x" `shouldBeRight` Var "x"
       eval' "\\x:T. x" `shouldBeRight` Abs "x" (TyVar "T") (Var "x")
       eval' "\\X. x" `shouldBeRight` TyAbs "X" (Var "x")
-      eval' "x [T]" `shouldBeRight` TyApp (Var "x") (TyVar "T")
 
     it "reduces simple applications" $
       eval' "(\\x:T. x) y:T" `shouldBeRight` VarAnn "y" (TyVar "T")
@@ -42,7 +41,6 @@ spec = do
       runEvalText' "x" `shouldBeRight` Var "x"
       runEvalText' "\\x:T. x" `shouldBeRight` Abs "x" (TyVar "T") (Var "x")
       runEvalText' "\\X. x" `shouldBeRight` TyAbs "X" (Var "x")
-      runEvalText' "x [T]" `shouldBeRight` TyApp (Var "x") (TyVar "T")
 
   describe "execEvalText" $ do
     let execEvalText' input = extract $ execEvalText input empty
@@ -52,7 +50,6 @@ spec = do
       execEvalText' "x" `shouldBeRight` Var "x"
       execEvalText' "\\x:T. x" `shouldBeRight` Abs "x" (TyVar "T") (Var "x")
       execEvalText' "\\X. x" `shouldBeRight` TyAbs "X" (Var "x")
-      execEvalText' "x [T]" `shouldBeRight` TyApp (Var "x") (TyVar "T")
 
   describe "unsafeExecEvalText" $ do
     let unsafeExecEvalText' input = extract $ unsafeExecEvalText input empty
@@ -62,7 +59,6 @@ spec = do
       unsafeExecEvalText' "x" `shouldBe` Var "x"
       unsafeExecEvalText' "\\x:T. x" `shouldBe` Abs "x" (TyVar "T") (Var "x")
       unsafeExecEvalText' "\\X. x" `shouldBe` TyAbs "X" (Var "x")
-      unsafeExecEvalText' "x [T]" `shouldBe` TyApp (Var "x") (TyVar "T")
 
     it "throws errors" $ do
       evaluate (unsafeExecEvalText' "\\x. x") `shouldThrow` isLambdaException

@@ -50,20 +50,27 @@ typecheckExpr ctx (TyApp e ty) = typecheckTyApp ctx e ty
 typecheckExpr _ (Let _ _) = throwError ImpossibleError
 
 typecheckVar :: Ord name => Context name -> name -> Typecheck name (Ty name)
-typecheckVar ctx var = defaultToFreshTyVar (Map.lookup var ctx)
-  where defaultToFreshTyVar (Just v) = pure v
-        defaultToFreshTyVar Nothing = TyVar <$> tyUnique
-
+typecheckVar ctx = defaultToUnique . typecheckVar' ctx
+  where defaultToUnique = maybe (TyVar <$> tyUnique) pure
+    
 typecheckVarAnn
   :: (Ord name, Pretty name)
   => Context name
   -> name
   -> Ty  name
   -> Typecheck name (Ty name)
-typecheckVarAnn ctx var ty = maybe (pure ty) checkContextType (Map.lookup var ctx)
+typecheckVarAnn ctx var ty = maybe (pure ty) checkContextType maybeTy
   where checkContextType ty'
           | ty' == ty = pure ty
           | otherwise = throwError $ tyMismatchError ty' ty
+        maybeTy = typecheckVar' ctx var
+
+typecheckVar' :: Ord name => Context name -> name -> Maybe (Ty name)
+typecheckVar' ctx var = Map.lookup var ctx >>= \case
+    ty@(TyForAll tyName tyBody)
+      | Map.member tyName ctx -> Just tyBody
+      | otherwise -> Just ty
+    ty -> Just ty
 
 typecheckAbs
   :: (Ord name, Pretty name)
@@ -72,9 +79,14 @@ typecheckAbs
   -> Ty name
   -> SystemFExpr name
   -> Typecheck name (Ty name)
-typecheckAbs ctx name ty body = TyArrow ty <$> typecheckExpr ctx' body
-  where ctx' = Map.insert name ty ctx
+typecheckAbs ctx name ty body = typecheckAbs' ty' (Map.insert name ty' ctx)
+  where typecheckAbs' (TyForAll tyName tyBody) ctx' = do
+          inner <- typecheckExpr (Map.insert tyName (TyVar tyName) ctx') body
+          pure $ TyForAll tyName (TyArrow tyBody inner)
+        typecheckAbs' t ctx' = TyArrow t <$> typecheckExpr ctx' body
 
+        ty' = liftForAlls ty
+      
 typecheckApp
   :: (Ord name, Pretty name)
   => Context name
@@ -111,8 +123,24 @@ typecheckTyApp
   -> SystemFExpr name
   -> Ty name
   -> Typecheck name (Ty name)
-typecheckTyApp ctx (TyAbs t expr) ty = typecheckExpr ctx $ substitute ty t expr
-typecheckTyApp ctx expr _ = typecheckExpr ctx expr
+typecheckTyApp ctx expr ty = do
+  typecheckExpr ctx expr >>= \case
+    TyForAll tyName tyBody -> pure $ substituteTy ty tyName tyBody
+    _ -> do
+      err <- tyAppMismatchError ctx expr ty
+      throwError err
+
+liftForAlls :: Ty name -> Ty name
+liftForAlls ty = foldr TyForAll res tyNames
+  where (tyNames, res) = liftForAlls' ty
+
+liftForAlls' :: Ty name -> ([name], Ty name)
+liftForAlls' (TyVar name) = ([], TyVar name)
+liftForAlls' (TyForAll name body) = (name:names, body')
+  where (names, body') = liftForAlls' body
+liftForAlls' (TyArrow t1 t2) = (n1 ++ n2, TyArrow t1' t2')
+  where (n1, t1') = liftForAlls' t1
+        (n2, t2') = liftForAlls' t2
 
 tyUnique :: Typecheck name name
 tyUnique = getTyUniques >>= tyUnique'
@@ -155,3 +183,16 @@ tyMismatchError expected actual
   <> prettyPrint expected
   <> " with actual type "
   <> prettyPrint actual
+
+tyAppMismatchError
+  :: (Ord name, Pretty name)
+  => Context name
+  -> SystemFExpr name
+  -> Ty name
+  -> Typecheck name LambdaException
+tyAppMismatchError ctx expr appTy = tyAppMismatchError' <$> typecheckExpr ctx expr
+  where tyAppMismatchError' actual = TyMismatchError
+          $ "Cannot apply type "
+          <> prettyPrint appTy
+          <> " to non-polymorphic type "
+          <> prettyPrint actual

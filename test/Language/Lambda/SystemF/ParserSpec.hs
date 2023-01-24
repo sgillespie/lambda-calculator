@@ -96,3 +96,8 @@ spec = do
 
       parseType "(W -> V) -> U"
         `shouldBe` Right (TyArrow (TyArrow (TyVar "W") (TyVar "V")) (TyVar "U"))
+
+    it "parses forall types" $ do
+      parseType "forall T. T" `shouldBeRight` TyForAll "T" (TyVar "T")
+      parseType "forall T U. T->U"
+        `shouldBeRight` TyForAll "T" (TyForAll "U" (TyArrow (TyVar "T") (TyVar "U")))

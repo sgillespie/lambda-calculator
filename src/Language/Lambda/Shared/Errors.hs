@@ -27,6 +27,7 @@ data LambdaException
   -- Examples:
   --
   --     (\x: X. x) (y:Y)
+  --     (\x: T. x) [U]
   | TyMismatchError Text
 
   -- | A catch-all error that indicates a bug in this project
