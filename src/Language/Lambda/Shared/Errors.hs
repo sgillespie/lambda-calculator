@@ -3,7 +3,8 @@ module Language.Lambda.Shared.Errors
     isLambdaException,
     isLetError,
     isParseError,
-    isImpossibleError
+    isImpossibleError,
+    isTyMismatchError,
   ) where
 
 import RIO
@@ -61,3 +62,7 @@ isParseError _ = False
 isImpossibleError :: LambdaException -> Bool
 isImpossibleError ImpossibleError = True
 isImpossibleError _ = False
+
+isTyMismatchError :: LambdaException -> Bool
+isTyMismatchError (TyMismatchError _) = True
+isTyMismatchError _ = False

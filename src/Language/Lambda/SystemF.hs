@@ -1,8 +1,12 @@
 module Language.Lambda.SystemF (
   evalText,
+  typecheckText,
   runEvalText,
+  runTypecheckText,
   execEvalText,
+  execTypecheckText,
   unsafeExecEvalText,
+  unsafeExecTypecheckText,
   defaultUniques,
   defaultTyUniques,
   mkState,
@@ -31,23 +35,52 @@ evalText
 evalText = either throwParseError processExpr . parseExpr
     where throwParseError = throwError . ParseError . Text.pack . show
 
+typecheckText
+  :: Text
+  -> Typecheck Text (Ty Text)
+typecheckText = either throwParseError typecheck . parseExpr
+    where throwParseError = throwError . ParseError . Text.pack . show
+
 runEvalText
   :: Text
   -> Globals Text
   -> Either LambdaException (TypedExpr Text, TypecheckState Text)
 runEvalText input globals' = runTypecheck (evalText input) (mkState globals')
 
+runTypecheckText
+  :: Text
+  -> Globals Text
+  -> Either LambdaException (Ty Text, TypecheckState Text)
+runTypecheckText input globals'
+  = runTypecheck (typecheckText input) (mkState globals')
+
 execEvalText
   :: Text
   -> Globals Text
   -> Either LambdaException (TypedExpr Text)
-execEvalText input globals' = execTypecheck (evalText input) (mkState globals')
+execEvalText input globals'
+  = execTypecheck (evalText input) (mkState globals')
+
+execTypecheckText
+  :: Text
+  -> Globals Text
+  -> Either LambdaException (Ty Text)
+execTypecheckText input globals'
+  = execTypecheck (typecheckText input) (mkState globals')
 
 unsafeExecEvalText
   :: Text
   -> Globals Text
   -> TypedExpr Text
-unsafeExecEvalText input globals' = unsafeExecTypecheck (evalText input) (mkState globals')
+unsafeExecEvalText input globals'
+  = unsafeExecTypecheck (evalText input) (mkState globals')
+
+unsafeExecTypecheckText
+  :: Text
+  -> Globals Text
+  -> Ty Text
+unsafeExecTypecheckText input globals'
+  = unsafeExecTypecheck (typecheckText input) (mkState globals')
 
 mkState :: Globals Text -> TypecheckState Text
 mkState globals' = TypecheckState globals' defaultUniques defaultTyUniques

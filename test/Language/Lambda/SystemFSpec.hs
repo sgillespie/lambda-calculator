@@ -6,11 +6,13 @@ import Language.Lambda.SystemF.HspecUtils
 
 import Lens.Micro
 import RIO
-import RIO.Map (empty)
+import RIO.Map (empty, fromList)
 import Test.Hspec
 
 spec :: Spec
 spec = do
+
+  
   describe "evalText" $ do
     let eval' :: Text -> Either LambdaException (SystemFExpr Text)
         eval' = over _Right (^. _expr) . eval
@@ -62,3 +64,55 @@ spec = do
 
     it "throws errors" $ do
       evaluate (unsafeExecEvalText' "\\x. x") `shouldThrow` isLambdaException
+
+  describe "typecheckText" $ do
+    let tc :: Text -> Either LambdaException (Ty Text)
+        tc input = execTypecheck (typecheckText input) initialState
+
+        initialState = mkTypecheckState defaultUniques defaultTyUniques
+
+    it "typechecks simple text" $ do
+      tc "x" `shouldHaveType` "Z"
+      tc "\\x:T. x" `shouldHaveType` "T -> T"
+      tc "\\X. x" `shouldHaveType` "forall X. Z"
+      tc "(\\x:T. x) y:T" `shouldHaveType` "T"
+      tc "(\\f:(T->T) x:T. f x) (\\y:T. y)" `shouldHaveType` "T -> T"
+
+  describe "runTypecheckText" $ do
+    let tc :: Text -> Either LambdaException (Ty Text)
+        tc input = fst <$> runTypecheckText input globals'
+
+        globals' = fromList [("x", TypedExpr (Var "x") (TyVar "A"))]
+
+    it "typechecks simple text" $ do
+      tc "x" `shouldHaveType` "A"
+      tc "\\x:T. x" `shouldHaveType` "T -> T"
+      tc "\\X. x" `shouldHaveType` "forall X. A"
+      tc "(\\x:T. x) y:T" `shouldHaveType` "T"
+      tc "(\\f:(T->T) x:T. f x) (\\y:T. y)" `shouldHaveType` "T -> T"
+
+  describe "execTypecheckText" $ do
+    let tc :: Text -> Either LambdaException (Ty Text)
+        tc input = execTypecheckText input globals'
+
+        globals' = fromList [("x", TypedExpr (Var "x") (TyVar "A"))]
+
+    it "typechecks simple text" $ do
+      tc "x" `shouldHaveType` "A"
+      tc "\\x:T. x" `shouldHaveType` "T -> T"
+      tc "\\X. x" `shouldHaveType` "forall X. A"
+      tc "(\\x:T. x) y:T" `shouldHaveType` "T"
+      tc "(\\f:(T->T) x:T. f x) (\\y:T. y)" `shouldHaveType` "T -> T"
+
+  describe "unsafeExecTypecheckText" $ do
+    let tc :: Text -> Ty Text
+        tc input = unsafeExecTypecheckText input globals'
+
+        globals' = fromList [("x", TypedExpr (Var "x") (TyVar "A"))]
+
+    it "typechecks simple text" $ do
+      Right (tc "x") `shouldHaveType` "A"
+      Right (tc "\\x:T. x") `shouldHaveType` "T -> T"
+      Right (tc "\\X. x") `shouldHaveType` "forall X. A"
+      Right (tc "(\\x:T. x) y:T") `shouldHaveType` "T"
+      Right (tc "(\\f:(T->T) x:T. f x) (\\y:T. y)") `shouldHaveType` "T -> T"
