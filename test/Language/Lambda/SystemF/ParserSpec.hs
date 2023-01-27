@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 module Language.Lambda.SystemF.ParserSpec (spec) where
 
 import Data.Either

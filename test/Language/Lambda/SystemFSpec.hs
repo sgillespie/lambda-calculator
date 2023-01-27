@@ -11,8 +11,6 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-
-  
   describe "evalText" $ do
     let eval' :: Text -> Either LambdaException (SystemFExpr Text)
         eval' = over _Right (^. _expr) . eval

@@ -65,13 +65,6 @@ typecheckVarAnn ctx var ty = maybe (pure ty) checkContextType maybeTy
           | otherwise = throwError $ tyMismatchError ty' ty
         maybeTy = typecheckVar' ctx var
 
-typecheckVar' :: Ord name => Context name -> name -> Maybe (Ty name)
-typecheckVar' ctx var = Map.lookup var ctx >>= \case
-    ty@(TyForAll tyName tyBody)
-      | Map.member tyName ctx -> Just tyBody
-      | otherwise -> Just ty
-    ty -> Just ty
-
 typecheckAbs
   :: (Ord name, Pretty name)
   => Context name
@@ -79,9 +72,9 @@ typecheckAbs
   -> Ty name
   -> SystemFExpr name
   -> Typecheck name (Ty name)
-typecheckAbs ctx name ty body = typecheckAbs' ty' (Map.insert name ty' ctx)
+typecheckAbs ctx name ty body = typecheckAbs' ty' (Map.insert name (BindTerm ty') ctx)
   where typecheckAbs' (TyForAll tyName tyBody) ctx' = do
-          inner <- typecheckExpr (Map.insert tyName (TyVar tyName) ctx') body
+          inner <- typecheckExpr (Map.insert tyName BindTy ctx') body
           pure $ TyForAll tyName (TyArrow tyBody inner)
         typecheckAbs' t ctx' = TyArrow t <$> typecheckExpr ctx' body
 
@@ -115,7 +108,7 @@ typecheckTyAbs
   -> SystemFExpr name
   -> Typecheck name (Ty name)
 typecheckTyAbs ctx ty body = TyForAll ty <$> typecheckExpr ctx' body
-  where ctx' = Map.insert ty (TyVar ty) ctx
+  where ctx' = Map.insert ty BindTy ctx
 
 typecheckTyApp
   :: (Ord name, Pretty name)
@@ -124,11 +117,26 @@ typecheckTyApp
   -> Ty name
   -> Typecheck name (Ty name)
 typecheckTyApp ctx expr ty = do
-  typecheckExpr ctx expr >>= \case
+  -- Clear in-scope type variables
+  let ctx' = Map.filter isTyBind ctx
+  
+  typecheckExpr ctx' expr >>= \case
     TyForAll tyName tyBody -> pure $ substituteTy ty tyName tyBody
     _ -> do
       err <- tyAppMismatchError ctx expr ty
       throwError err
+
+  where
+    isTyBind BindTy = False
+    isTyBind _ = True
+
+typecheckVar' :: Ord name => Context name -> name -> Maybe (Ty name)
+typecheckVar' ctx var = Map.lookup var ctx >>= \case
+  BindTerm ty@(TyForAll tyName tyBody)
+    | Map.member tyName ctx -> Just tyBody
+    | otherwise -> Just ty
+  BindTerm ty -> Just ty
+  BindTy -> Nothing
 
 liftForAlls :: Ty name -> Ty name
 liftForAlls ty = foldr TyForAll res tyNames

@@ -2,6 +2,7 @@ module Language.Lambda.SystemF.State
   ( TypecheckState(..),
     Typecheck(),
     Context(),
+    Binding(..),
     Globals(),
     runTypecheck,
     execTypecheck,
@@ -42,9 +43,14 @@ type Typecheck name
   = StateT (TypecheckState name)
       (Except LambdaException)
 
-type Context name = Map name (Ty name)
-
 type Globals name = Map name (TypedExpr name)
+
+type Context name = Map name (Binding name)
+
+data Binding name
+  = BindTerm (Ty name)
+  | BindTy
+  deriving (Eq, Show)
 
 runTypecheck
   :: Typecheck name result
@@ -74,8 +80,9 @@ mkTypecheckState = TypecheckState Map.empty
 
 _context :: SimpleGetter (TypecheckState name) (Context name)
 _context = to (getContext' . tsGlobals)
-  where getContext' = Map.map (^. _ty)
-
+  where getContext' :: Globals name -> Context name
+        getContext' = Map.map (\expr -> BindTerm (expr ^. _ty))
+        
 _globals :: Lens' (TypecheckState name) (Globals name)
 _globals f state' = (\globals' -> state' { tsGlobals = globals' })
   <$> f (tsGlobals state')
