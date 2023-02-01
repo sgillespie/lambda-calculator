@@ -72,8 +72,11 @@ evalTyApp
   -> Ty name
   -> Typecheck name (SystemFExpr name)
 evalTyApp expr ty = case expr of
-    TyAbs name inner -> evalInner $ substituteTyInExpr ty name inner
-    _ -> TyApp <$> evalInner expr <*> pure ty
+  TyAbs name inner -> evalInner $ substituteTyInExpr ty name inner
+  Abs name (TyForAll tyName ty') inner ->
+    Abs name (substituteTy ty tyName ty') <$> evalInner inner
+  VarAnn name (TyForAll tyName ty') -> pure $ VarAnn name (substituteTy ty tyName ty')
+  _ -> TyApp <$> evalInner expr <*> pure ty
 
 betaReduce
   :: (Ord name, Pretty name)

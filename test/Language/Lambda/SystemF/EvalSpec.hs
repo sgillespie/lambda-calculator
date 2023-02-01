@@ -4,7 +4,7 @@ import RIO
 import RIO.Map (fromList)
 import Test.Hspec
 
-import Language.Lambda.Shared.Errors (isLetError, isImpossibleError)
+import Language.Lambda.Shared.Errors
 import Language.Lambda.Shared.UniqueSupply (defaultUniques, defaultTyUniques)
 import Language.Lambda.SystemF.Expression
 import Language.Lambda.SystemF.Eval
@@ -18,64 +18,27 @@ spec = do
   
   describe "evalExpr" $ do
     it "Does not reduce normal form" $ do
-      evalExpr' (Var "x") `shouldBeRight` Var "x"
+      "x" `shouldEvalTo` "x"
 
     it "beta reduces" $ do
-      evalExpr' (App (Abs "x" (TyVar "T") (Var "x")) (Var "y"))
-        `shouldBeRight` Var "y"
+      "(\\x:T. x) y:T" `shouldEvalTo` "y:T"
+      "(\\f:(T->T) x:T. f x) (g:T->T) (y:T)" `shouldEvalTo` "g:(T->T) y:T"
+      "\\x:T. (\\y:T. y) x" `shouldEvalTo` "\\x:T. x"
+      "(\\f:(T->T) x:T. f x) (\\f:T. x:T)" `shouldEvalTo` "\\z:T. x:T"
 
-    it "reduces multiple applications" $ do
-      let expr = App innerL innerR
-          innerL = App
-            (Abs "f" (TyArrow (TyVar "T") (TyVar "T")) $
-              Abs "x" (TyVar "T") $
-                App (Var "f") (Var "x"))
-            (Var "g")
-          innerR = Var "y"
-
-      evalExpr' expr `shouldBeRight` App (Var "g") (Var "y")
-  
-    it "reduces inner redexes" $ do
-      let expr = Abs "x" (TyVar "T") $
-            App
-              (Abs "y" (TyVar "T") (Var "y"))
-              (Var "x")
-
-      evalExpr' expr `shouldBeRight` Abs "x" (TyVar "T") (Var "x")
-
-    it "reduces with name captures" $ do
-      let expr = App innerL innerR
-          innerL = Abs "f" (TyArrow (TyVar "T") (TyVar "T")) $
-            Abs "x" (TyVar "T") $
-              App (Var "f") (Var "x")
-          innerR = Abs "f" (TyVar "U") (Var "x")
-
-      evalExpr' expr `shouldBeRight` Abs "z" (TyVar "T") (Var "x")
-  
     it "reduces let bodies" $ do
-      let expr = Let "x" $
-            App
-              (Abs "y" (TyVar "Y") (Var "y"))
-              (Var "z")
-      evalExpr' expr `shouldBeRight` Let "x" (Var "z")
+      "let x = (\\y:Y. y) z:Y" `shouldEvalTo` "let x = z:Y"
 
     it "nested let expressions fail" $ do
-      let res = evalExpr' (Let "x" (Let "y" (Var "z")))
-      res `shouldSatisfy` either isLetError (const False)
+      eval "let x = let y = z" `shouldFailWith` isLambdaException
 
     it "reduces type abstractions to A normal form" $ do
-      let expr = TyAbs "T" $
-            App
-              (Abs "y" (TyVar "T") (Var "y"))
-              (VarAnn "x" (TyVar "T"))
+      "\\T. (\\y:T. y) x:T" `shouldEvalTo` "\\T. x:T"
 
-      evalExpr' expr `shouldBeRight` TyAbs "T" (VarAnn "x" (TyVar "T"))
-
-    it "reduces simple type applications" $ do
-      let expr = TyApp
-            (TyAbs "T" (VarAnn "x" (TyVar "T")))
-            (TyVar "X")
-      evalExpr' expr `shouldBeRight` VarAnn "x" (TyVar "X")
+    it "reduces type applications" $ do
+      "(\\T. x:T) [X]" `shouldEvalTo` "x:X"
+      "(\\x:(forall T. T). x) [X]" `shouldEvalTo` "\\x:X. x"
+      "x:(forall T. T) [X]" `shouldEvalTo` "x:X"
 
   describe "subGlobals" $ do
     let subGlobals' :: SystemFExpr Text -> SystemFExpr Text

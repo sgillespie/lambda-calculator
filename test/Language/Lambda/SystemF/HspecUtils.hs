@@ -40,7 +40,8 @@ shouldHaveType res tyRepr = case parseType tyRepr of
     Right ty -> res `shouldBe` Right ty
 
 shouldFailWith
-  :: Either LambdaException (Ty Text)
+  :: Show a
+  => Either LambdaException a
   -> Selector LambdaException
   -> Expectation
 shouldFailWith res selector = case res of
