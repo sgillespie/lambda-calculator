@@ -47,6 +47,10 @@ spec = describe "typecheck" $ do
       `shouldHaveType` "forall T. (U -> T) -> (U -> T)"
     typecheck' [] "\\x:(forall T. T). x:T"
       `shouldHaveType` "forall T. T -> T"
+    typecheck' [] "(\\z:(forall X. X). z) (\\X. a:X)"
+      `shouldHaveType` "forall X. X"
+    typecheck' [] "(\\x:(forall T. T). x) (\\X. y:X)"
+      `shouldHaveType` "forall X. X"
 
     typecheck' globals' "a b" `shouldFailWith` isTyMismatchError
     typecheck' globals' "f b" `shouldFailWith` isTyMismatchError
@@ -70,7 +74,8 @@ spec = describe "typecheck" $ do
     typecheck' globals' "(\\X. (\\x:X. x)) [Y]" `shouldHaveType` "Y -> Y"
     typecheck' globals' "(z:forall X. X) [Y]" `shouldHaveType` "Y"
     typecheck' globals' "\\x:(forall X. X). x [Y]" `shouldHaveType` "forall X. X -> Y"
-
+    
+  
     typecheck' [] "x:T [U]" `shouldFailWith` isTyMismatchError
     typecheck' globals' "x [U]" `shouldFailWith` isTyMismatchError
 

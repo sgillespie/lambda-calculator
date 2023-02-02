@@ -91,13 +91,14 @@ typecheckApp ctx e1 e2 = do
   t1 <- typecheckExpr ctx e1
   t2 <- typecheckExpr ctx e2
 
-  -- Verify the type of t1 is an Arrow
   (t1AppInput, t1AppOutput) <- case t1 of
-    (TyArrow appInput appOutput) -> return (appInput, appOutput)
-    _ -> throwError $ tyMismatchError (TyArrow t2 t1) t1
+    (TyArrow appInput appOutput) -> pure (appInput, appOutput)
+    (TyForAll n1 (TyArrow appInput _))
+      -> pure (TyForAll n1 appInput, t2)
+    _ -> throwError $ TyMismatchError "Not Arrow"
 
   -- Verify the output of e1 matches the type of e2
-  if t1AppInput == t2
+  if t1AppInput `isTyEquivalent` t2
     then return t1AppOutput
     else throwError $ tyMismatchError (TyArrow t2 t1AppOutput) (TyArrow t1 t1AppOutput)
 
@@ -149,6 +150,16 @@ liftForAlls' (TyForAll name body) = (name:names, body')
 liftForAlls' (TyArrow t1 t2) = (n1 ++ n2, TyArrow t1' t2')
   where (n1, t1') = liftForAlls' t1
         (n2, t2') = liftForAlls' t2
+
+isTyEquivalent :: Ord name => Ty name -> Ty name -> Bool
+isTyEquivalent t1 t2
+  | t1 == t2 = True
+  | otherwise = case (t1, t2) of
+      (TyForAll n1 t1', TyForAll n2 t2') -> (n1, t1') `areForAllsEquivalent` (n2, t2')
+      _ -> False
+
+areForAllsEquivalent :: Ord name => (name, Ty name) -> (name, Ty name) -> Bool
+areForAllsEquivalent (n1, t1) (n2, t2) = t1 == substituteTy (TyVar n1) n2 t2
 
 tyUnique :: Typecheck name name
 tyUnique = getTyUniques >>= tyUnique'

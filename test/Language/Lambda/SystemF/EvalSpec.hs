@@ -39,6 +39,7 @@ spec = do
       "(\\T. x:T) [X]" `shouldEvalTo` "x:X"
       "(\\x:(forall T. T). x) [X]" `shouldEvalTo` "\\x:X. x"
       "x:(forall T. T) [X]" `shouldEvalTo` "x:X"
+      "(\\x:(forall T. T). x) (\\X. y:X)" `shouldEvalTo` "\\X. y:X"
 
   describe "subGlobals" $ do
     let subGlobals' :: SystemFExpr Text -> SystemFExpr Text
