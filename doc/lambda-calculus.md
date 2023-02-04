@@ -43,9 +43,7 @@ Each evaluation rule has the general form:
 
     t → t' ⇒ u → u'
     
-which means
-
- > If `t` evaluates to `t'`, then `u` evaluates to `u'`
+which means if `t` evaluates to `t'`, then `u` evaluates to `u'`
 
 We will start with function application, which can be described by the two rules
 
