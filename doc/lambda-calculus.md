@@ -1,4 +1,4 @@
-# Untyped Lambda Calculus: Implementation Details
+# Implementation Details: Untyped Lambda Calculus
 
 The primary goal of Lambda Calculator is to be as close to pure Lambda Calculus as
 possible, while providing enough extensions to be useful. In this document, we will
