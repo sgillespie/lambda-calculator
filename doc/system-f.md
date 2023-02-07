@@ -98,3 +98,5 @@ so we introduce variants of `T-Var` to account for this.
 
     x:(forall T. U), T ∈ Γ ⇒ x : U     (T-VarPoly)
     x:(forall T. U), T ∈ Γ ⇒ (x:U) : U (T-VarAnnPoly)
+    Γ,T ⊢ t:V ⇒ (\x:(forall T. U). t) : forall T. U -> V (T-AbsPoly)
+    Γ ⊢ f:(forall T. U -> V), x:(forall T. U -> V) ⇒ (f x) : forall T. V (T-App)
