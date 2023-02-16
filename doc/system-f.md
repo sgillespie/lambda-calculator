@@ -53,7 +53,6 @@ Which means if, in the typing context &Gamma;, `t` has type `T`, then `u` has ty
 
 We start with the type of variables:
 
-    
     x:T  Γ ⇒ x : T      (T-Var)
     x ∉ Γ ⇒ x : Z       (T-Var2)
 
@@ -84,7 +83,7 @@ Application is unchanged from pure System F:
     
 Next, we have type abstraction:
 
-    Γ,X ⊢ t:T ⇒ \X. t : forall X. T       (T-TyAbs)
+    Γ,X ⊢ t:T ⇒ \X. t : forall X. T (T-TyAbs)
     
 We add the type abstraction parameter `X` to &Gamma;, then calculate the type of its body.
     
@@ -100,3 +99,22 @@ so we introduce variants of `T-Var` to account for this.
     x:(forall T. U), T ∈ Γ ⇒ (x:U) : U (T-VarAnnPoly)
     Γ,T ⊢ t:V ⇒ (\x:(forall T. U). t) : forall T. U -> V (T-AbsPoly)
     Γ ⊢ f:(forall T. U -> V), x:(forall T. U -> V) ⇒ (f x) : forall T. V (T-App)
+
+All of the typing rules are summarized below:
+
+    x:T  Γ ⇒ x : T                   (T-Var)
+    x ∉ Γ ⇒ x : Z                    (T-Var2)
+    x:T ∈ Γ ⇒ (x:T) : T              (T-VarAnn)
+    x ∉ Γ ⇒ (x:T) : T                (T-VarAnn2)
+    Γ,x:T ⊢ t:U ⇒ (\x:T. t) : T -> U (T-Abs)
+    Γ ⊢ f:(T -> U), x:T ⇒ f x : U    (T-App)
+    Γ,X ⊢ t:T ⇒ \X. t : forall X. T  (T-TyAbs)
+    Γ ⊢ t:(forall X. T) ⇒ t [V] : [X ↦ V] T
+                                     (T-TyApp)
+    x:(forall T. U), T ∈ Γ ⇒ x : U   (T-VarPoly)
+    x:(forall T. U), T ∈ Γ ⇒ (x:U) : U
+                                     (T-VarAnnPoly)
+    Γ,T ⊢ t:V ⇒ (\x:(forall T. U). t) : forall T. U -> V
+                                     (T-AbsPoly)
+    Γ ⊢ f:(forall T. U -> V), x:(forall T. U -> V) ⇒ (f x) : forall T. V
+                                     (T-AppPoly)
