@@ -72,7 +72,7 @@ Which converts any abstraction to it's point-free representation.
 Finally, we have let expression evaluation
 
     t → u ⇒ let x = t → u   (E-Let)
-    x = y ∈ Γ ⇒ x → y (E-Global)
+    x = y ∈ Γ ⇒ x → y       (E-Global)
     
 Unlike in pure Lambda Calculus we have a globals context, we call &Gamma;. This contains
 pairs names to expressions. The rule _E-Let_ allow the user to bind a global variable. We

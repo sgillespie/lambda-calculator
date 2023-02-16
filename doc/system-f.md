@@ -118,3 +118,73 @@ All of the typing rules are summarized below:
                                      (T-AbsPoly)
     Γ ⊢ f:(forall T. U -> V), x:(forall T. U -> V) ⇒ (f x) : forall T. V
                                      (T-AppPoly)
+## Evaluation
+
+In pure System F, only abstractions and type abstractins are valid values. Because we
+allow free variables, as in the untyped interpreter, we allow any expression as a value.
+Also in pure System F, free type variables are not allowed, but we allow them as well.
+
+Each evaluation rule has the general form:
+
+    t → t' ⇒ u → u'
+    
+which means if `t` evaluates to `t'`, then `u` evaluates to `u'`
+
+We will start with function application, which can be described by the two rules
+
+    t → t', u → u' ⇒ t u → t' u' (E-App)
+    (\x. t) w → [x ↦ w] t        (E-AppAbs)
+
+The first rule, _E-App_ means that we attempt to reduce each operand before applying an
+abstraction. The second rule, _E-AppAbs_ represents beta reduction. It says that an
+abstraction `\x. t` applied to a term `w` is evaluated by substituting the abstraction's
+argument `x` with `w` in the abstraction's body `t`.
+
+While applying _E-AppAbs_, we also perform Alpha conversion to prevent shadowing free
+variables in the first term by abstractions in the second. When we see the following form:
+
+    (\w:T. x) (\y:U. z)
+
+We rewrite `(\w:T. x)` to an another abstraction who's argument does not appear free in
+`(\y:U. z)`.
+
+Next, we have Eta conversion
+
+    \x::T. f x → f (E-Eta)
+    
+Which converts any abstraction to it's point-free representation.
+
+The following type application rules are unchanged from pure System F:
+
+    t → t', ⇒ t [T] → t' [T] (E-TApp)
+    (\X. t) [T] → [X ↦ T] t  (E-TAppTAbs)
+
+We add polymorphic variants:
+
+    x:(forall X. T) [U] (E-TAppVarPoly)
+    (\x:(forall X. T). t) [U] → \x:([X ↦ U] T). t 
+                        (E-TAppAbsPoly)
+
+Finally, we have let expression evaluation
+
+    t → u ⇒ let x = t → u   (E-Let)
+    x = y ∈ Γ ⇒ x → y       (E-Global)
+    
+Unlike in pure System F we have a globals context, we call &Gamma;. This contains pairs
+names to expressions. The rule _E-Let_ allows the user to bind a global variable. We first
+attempt to reduce its body to normal form, and then we add the pair `x = u` to &Gamma;.
+
+We use the next rule, _E-Global_, to replace free variables if they are bound in &Gamma;.
+
+All of the evaluation rules are summarized below:
+
+    t → t', u → u' ⇒ t u → t' u' (E-App)
+    (\x. t) w → [x ↦ w] t        (E-AppAbs)
+    \x::T. f x → f               (E-Eta)
+    t → t', ⇒ t [T] → t' [T]     (E-TApp)
+    (\X. t) [T] → [X ↦ T] t      (E-TAppTAbs)
+    x:(forall X. T) [U]          (E-TAppVarPoly)
+    (\x:(forall X. T). t) [U] → \x:([X ↦ U] T). t
+                                 (E-TAppAbsPoly)
+    t → u ⇒ let x = t → u        (E-Let)
+    x = y ∈ Γ ⇒ x → y            (E-Global)
