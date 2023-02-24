@@ -29,13 +29,18 @@ parseCliOptions = execParser opts
 
 cliParser :: Parser CliOptions
 cliParser = CliOptions 
-  <$> flag Untyped SystemF language
+  <$> language
   <*> switch version
-  where language = long "system-f"
-          <> short 'f'
-          <> internal -- this is a secret feature
-          <> help "Use the System F interpreter"
+  where language = flag' SystemF systemF <|> flag Untyped Untyped untyped
 
         version = long "version"
           <> short 'v'
           <> help "Print the version"
+
+        systemF = long "system-f"
+          <> short 'f'
+          <> help "Use the System F interpreter"
+
+        untyped = long "untyped"
+          <> short 'l'
+          <> help "Use the Untyped Lambda Calculus interpreter"
