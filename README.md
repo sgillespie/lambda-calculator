@@ -8,6 +8,12 @@ performance.
 This project is intended to be an educational resource for learning and 
 implementing functional programming languages.
 
+## Installation
+
+Lambda Calculator is on [Hackage](https://hackage.haskell.org/package/lambda-calculator-3.1.0.0):
+
+    cabal install lambda-calculator
+
 ## Building
 In order to build, you will need
 

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 652632e3c6eb5aebeb6bb65d761a6ed98c1a3fa287118a57699f4046d76a8aa1
+-- hash: 3256f86f253ee771f5e7374ff11bcb34286722368054e4e233095c13c9abe64b
 
 name:           lambda-calculator
 version:        3.1.0.0
@@ -15,7 +15,7 @@ homepage:       https://github.com/sgillespie/lambda-calculator#readme
 bug-reports:    https://github.com/sgillespie/lambda-calculator/issues
 author:         Sean D Gillespie
 maintainer:     sean@mistersg.net
-copyright:      2016 Sean Gillespie
+copyright:      2016-2023 Sean Gillespie
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple
