@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 18943ea3103acbfd2e7820e474c9907945ba026d4ec31b722e7514e7a68df92f
+-- hash: f82c1c414f34d0206145246e42631d84392ca3926a0cd3b6a3d27a941789eef6
 
 name:           lambda-calculator
 version:        3.0.0.1
@@ -212,6 +212,7 @@ test-suite lambda-calculus-test
   main-is: Spec.hs
   other-modules:
       Language.Lambda.SystemF.EvalSpec
+      Language.Lambda.SystemF.Examples.BoolSpec
       Language.Lambda.SystemF.Examples.NatSpec
       Language.Lambda.SystemF.ExpressionSpec
       Language.Lambda.SystemF.HspecUtils

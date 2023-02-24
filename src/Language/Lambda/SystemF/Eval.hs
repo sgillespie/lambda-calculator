@@ -133,6 +133,8 @@ substitute expr forName inExpr
         | n == forName -> expr
         | otherwise -> Abs n ty $ substitute body forName inExpr
       (App e1 e2) -> App (sub e1) (sub e2)
+      (TyAbs n body) -> TyAbs n $ substitute body forName inExpr
+      (TyApp body ty) -> TyApp (substitute body forName inExpr) ty
       _ -> inExpr
   where sub expr' = substitute expr' forName inExpr
 
@@ -152,23 +154,6 @@ substituteTyInExpr ty forName inExpr
       _ -> inExpr
   where sub = substituteTyInExpr ty forName
 
-substituteTy
-  :: Eq name
-  => Ty name
-  -> name
-  -> Ty name
-  -> Ty name
-substituteTy ty forName inTy
-  = case inTy of
-      TyVar n
-        | n == forName -> ty
-        | otherwise -> inTy
-      TyArrow t1 t2 -> TyArrow (sub t1) (sub t2)
-      TyForAll n ty'
-        | n == forName -> inTy
-        | otherwise -> TyForAll n (sub ty')
-  where sub = substituteTy ty forName
-  
 freeVarsOf
   :: (Ord name, Pretty name)
   => SystemFExpr name

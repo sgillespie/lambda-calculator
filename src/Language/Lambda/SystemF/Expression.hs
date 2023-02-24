@@ -5,6 +5,7 @@ module Language.Lambda.SystemF.Expression
     _expr,
     _ty,
     prettyPrint,
+    substituteTy,
     upperLambda
   ) where
 
@@ -39,7 +40,7 @@ data Ty name
   = TyVar name                  -- ^ Type variable (T)
   | TyArrow (Ty name) (Ty name) -- ^ Type arrow    (T -> U)
   | TyForAll name (Ty name)     -- ^ Universal type (forall T. X)
-  deriving (Eq, Show)
+  deriving (Show)
 
 instance (Pretty name) => Pretty (SystemFExpr name) where
   pretty (Var name) = pretty name
@@ -56,6 +57,9 @@ instance Pretty name => Pretty (TypedExpr name) where
 instance Pretty name => Pretty (Ty name) where
   pretty = prettyTy False
 
+instance Eq name => Eq (Ty name) where
+  (==) = isTyEquivalent
+
 _expr :: Lens' (TypedExpr name) (SystemFExpr name)
 _expr = lens teExpr (\res expr -> res { teExpr = expr })
 
@@ -65,6 +69,23 @@ _ty = lens teTy (\res ty -> res { teTy = ty })
 prettyPrint :: Pretty pretty => pretty -> Text
 prettyPrint expr = renderStrict docStream
   where docStream = layoutPretty defaultLayoutOptions (pretty expr)
+
+substituteTy
+  :: Eq name
+  => Ty name
+  -> name
+  -> Ty name
+  -> Ty name
+substituteTy ty forName inTy
+  = case inTy of
+      TyVar n
+        | n == forName -> ty
+        | otherwise -> inTy
+      TyArrow t1 t2 -> TyArrow (sub t1) (sub t2)
+      TyForAll n ty'
+        | n == forName -> inTy
+        | otherwise -> TyForAll n (sub ty')
+  where sub = substituteTy ty forName
 
 upperLambda :: Char
 upperLambda = 'Λ'
@@ -113,6 +134,13 @@ prettyTy _ (TyVar name) = pretty name
 prettyTy compact (TyArrow t1 t2) = prettyTyArrow compact t1 t2
 prettyTy compact (TyForAll name ty) = prettyTyForAll compact name ty
 
+isTyEquivalent :: Eq name => Ty name -> Ty name -> Bool
+isTyEquivalent t1 t2
+  | t1 `isTySame` t2 = True
+  | otherwise = case (t1, t2) of
+      (TyForAll n1 t1', TyForAll n2 t2') -> (n1, t1') `areForAllsEquivalent` (n2, t2')
+      _ -> False
+
 prettyTyArrow :: Pretty name => Bool -> Ty name -> Ty name -> Doc ann
 prettyTyArrow compact (TyArrow t1 t2) t3
   = prettyTyArrow' compact compositeTy $ prettyTy compact t3
@@ -137,6 +165,15 @@ prettyArg name ty = pretty name <> colon <> pretty ty
 
 upperLambda' :: Doc ann
 upperLambda' = pretty upperLambda
+
+isTySame :: Eq name => Ty name -> Ty name -> Bool
+isTySame (TyVar n1) (TyVar n2) = n1 == n2
+isTySame (TyArrow t1 t2) (TyArrow t1' t2') = t1 == t1' && t2 == t2'
+isTySame (TyForAll n1 t1) (TyForAll n2 t2) = n1 == n2 && t1 == t2
+isTySame _ _ = False
+
+areForAllsEquivalent :: Eq name => (name, Ty name) -> (name, Ty name) -> Bool
+areForAllsEquivalent (n1, t1) (n2, t2) = t1 == substituteTy (TyVar n1) n2 t2
 
 prettyTyArrow' :: Bool -> Doc ann -> Doc ann -> Doc ann
 prettyTyArrow' compact doc1 doc2 = doc1 `add'` "->" `add'` doc2

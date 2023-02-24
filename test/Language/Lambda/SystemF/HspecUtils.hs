@@ -8,7 +8,7 @@ import Test.Hspec
 import qualified RIO.Map as Map
 
 shouldEvalTo :: Text -> Text -> Expectation
-shouldEvalTo s = shouldBe (eval s) . eval
+shouldEvalTo input expected = eval input `shouldBe` eval expected
 
 shouldTypecheckTo :: Text -> Text -> Expectation
 shouldTypecheckTo = shouldTypecheckToWithGlobals []

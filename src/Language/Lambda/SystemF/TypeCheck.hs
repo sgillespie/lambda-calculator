@@ -166,34 +166,6 @@ tyUnique = getTyUniques >>= tyUnique'
     where tyUnique' (u:us) = setTyUniques us $> u
           tyUnique' _ = throwError ImpossibleError
 
-substitute
-  :: Eq n
-  => Ty n
-  -> n
-  -> SystemFExpr n
-  -> SystemFExpr n
-substitute ty name (App e1 e2) = App (substitute ty name e1) (substitute ty name e2)
-substitute ty name (Abs n ty' e) = Abs n (substituteTy ty name ty') (substitute ty name e)
-substitute ty name (VarAnn n ty') = VarAnn n $ substituteTy ty name ty'
-substitute ty name (TyAbs ty' e) = TyAbs ty' (substitute ty name e) 
-substitute ty name (TyApp e ty') = TyApp (substitute ty name e) (substituteTy ty name ty')
-substitute _ _ expr = expr
-
-substituteTy
-  :: Eq name
-  => Ty name
-  -> name
-  -> Ty name
-  -> Ty name
-substituteTy ty name (TyArrow t1 t2) 
-  = TyArrow (substituteTy ty name t1) (substituteTy ty name t2)
-substituteTy ty name ty'@(TyVar name') 
-  | name == name' = ty
-  | otherwise     = ty'
-substituteTy _ name t2@(TyForAll name' t2') 
-  | name == name' = t2
-  | otherwise     = TyForAll name' (substituteTy t2 name t2')
-
 tyMismatchError
   :: Pretty ty => ty -> ty -> LambdaException
 tyMismatchError expected actual
