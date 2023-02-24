@@ -52,7 +52,7 @@ and print the result. Here are a few examples:
     λf x. f (f (f x))
     λ > :q
     
-Here are some examples for the System F interpreter (`system-f`):
+Here are some examples for the System F interpreter (`--system-f`):
 
     Lambda Calculator (3.1.0.0)
     Type :h for help
