@@ -5,7 +5,7 @@ description: A simple implementation of the Untyped Lambda Calculus
 category: LambdaCalculus,Language,Teaching
 author: Sean D Gillespie
 maintainer: sean@mistersg.net
-copyright: 2016 Sean Gillespie
+copyright: 2016-2023 Sean Gillespie
 license: MIT
 github: sgillespie/lambda-calculator
 
