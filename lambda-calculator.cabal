@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f82c1c414f34d0206145246e42631d84392ca3926a0cd3b6a3d27a941789eef6
+-- hash: 652632e3c6eb5aebeb6bb65d761a6ed98c1a3fa287118a57699f4046d76a8aa1
 
 name:           lambda-calculator
-version:        3.0.0.1
+version:        3.1.0.0
 synopsis:       A lambda calculus interpreter
 description:    A simple implementation of the Untyped Lambda Calculus
 category:       LambdaCalculus,Language,Teaching
