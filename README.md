@@ -38,6 +38,8 @@ This will open a repl (read-eval-print loop) prompt
 
     Lambda Calculator (3.1.0.0)
     Type :h for help
+    
+For information on valid syntax, type `:h` or `:help`.
 
 You can start typing lambda calculus expressions and the program will evaluate them
 and print the result. Here are a few examples:
