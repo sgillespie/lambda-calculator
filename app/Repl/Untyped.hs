@@ -22,21 +22,11 @@ type Repl a = HaskelineT (EvalT Text IO) a
 runUntypedRepl :: IO ()
 runUntypedRepl
   = void . runExceptT . evalStateT (evalReplOpts replOpts) $ initialState
-  where replOpts = ReplOpts
-          { banner = const $ unpack <$> prompt',
-            command = evalLambda . pack,
-            options = commands,
-            prefix = Just ':',
-            multilineCommand = Nothing,
-            tabComplete = Custom completer,
-            initialiser = initializer,
-            finaliser = return Exit
-          }
-
+  where replOpts = mkReplOpts banner' (evalLambda . pack) helpMsg
         initialState = mkEvalState defaultUniques
 
-prompt' :: Repl Text
-prompt' = prompt $ singleton lambda
+banner' :: MultiLine -> Repl String
+banner' _ = unpack <$> prompt (singleton lambda)
 
 evalLambda :: Text -> Repl ()
 evalLambda input = do
@@ -48,3 +38,21 @@ evalLambda input = do
     Right (res', newState) -> do
       put newState
       liftIO . putStrLn . prettyPrint $ res'
+
+helpMsg :: Text
+helpMsg = " Commands available: \n"
+  <> "    <expression> Evaluate <expression>\n"
+  <> "    :help, :h    Show this help\n"
+  <> "    :quit, :q    Quit\n\n"
+  
+  <> " Expressions can take the form:\n"
+  <> "    x          variable\n"
+  <> "    \\x. t      abstraction\n"
+  <> "    f x        function application\n"
+  <> "    let x = t  global binding\n\n"
+
+  <> " Examples of valid expressions:\n"
+  <> "    x\n"
+  <> "    \\x. x\n"
+  <> "    (\\x. x) n\n"
+  <> "    (\\n f x. f (n f x)) (\\f x. f (f x))\n"
