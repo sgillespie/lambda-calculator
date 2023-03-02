@@ -74,8 +74,14 @@ Then install:
 In order to run the testsuite, run
 
     stack test
-    
-# Author
+  
+## Implementation
+Complete implementation specifications can be found here:
+
+ * [doc/lambda-calculus.md](doc/lambda-calculus.md)
+ * [doc/system-f.md](doc/system-f.md)
+
+## Author
 **Sean Gillespie** [sean@mistersg.net](mailto:sean@mistersg.net)
 
 # License
